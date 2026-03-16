@@ -79,7 +79,7 @@ const IMAGES = [
     id: 'four',
     label: '4',
     // Print-style 4: diagonal down-left, horizontal right, then vertical down (continuous single stroke)
-    pathD: 'M 165 40 L 115 100 L 185 100 L 185 215'
+    pathD: 'M 165 40 L 115 100 M 115 100 L 185 100 L 185 215'
   },
   {
     id: 'five',

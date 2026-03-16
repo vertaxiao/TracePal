@@ -180,12 +180,13 @@ function loadImage(idx) {
 
 // ── Reset tracing state ───────────────────────────────────────────────────────
 function resetTracing() {
-  isComplete  = false;
-  isTracing   = false;
-  mouseIsDown = false;
-  userPath    = [];
-  coverageMap = new Array(sampledPoints.length).fill(false);
-  lastLogical = null;
+  isComplete     = false;
+  isTracing      = false;
+  mouseIsDown    = false;
+  userPath       = [];
+  coverageMap    = new Array(sampledPoints.length).fill(false);
+  lastLogical    = null;
+  completionPath = null;
 
   setFeedback('none', '');
   progressBar.style.width = '0%';
@@ -221,7 +222,11 @@ function render() {
   if (!ctx || displaySize === 0) return;
   ctx.clearRect(0, 0, displaySize, displaySize);
   drawGuide();
-  drawUserPath();
+  if (completionPath) {
+    drawPath(completionPath);
+  } else {
+    drawUserPath();
+  }
 }
 
 function drawGuide() {
@@ -247,7 +252,11 @@ function drawGuide() {
 }
 
 function drawUserPath() {
-  if (userPath.length < 2) return;
+  drawPath(userPath);
+}
+
+function drawPath(path) {
+  if (path.length < 2) return;
 
   const scale = displaySize / LOGICAL_SIZE;
 
@@ -258,9 +267,9 @@ function drawUserPath() {
   ctx.lineCap   = 'round';
 
   // Draw each segment with its own colour
-  for (let i = 1; i < userPath.length; i++) {
-    const prev = userPath[i - 1];
-    const curr = userPath[i];
+  for (let i = 1; i < path.length; i++) {
+    const prev = path[i - 1];
+    const curr = path[i];
     ctx.beginPath();
     ctx.moveTo(prev.x, prev.y);
     ctx.lineTo(curr.x, curr.y);

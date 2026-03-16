@@ -52,6 +52,62 @@ const IMAGES = [
            'Q 220,222 234,188 Q 250,162 238,132 ' +
            'Q 262,100 242,68 Q 222,38 190,82 ' +
            'Q 168,56 150,60 Q 132,56 110,82 Z'
+  },
+  {
+    id: 'zero',
+    label: '0',
+    pathD: 'M 150 25 C 195 25 220 65 220 125 C 220 185 195 225 150 225 C 105 225 80 185 80 125 C 80 65 105 25 150 25 Z'
+  },
+  {
+    id: 'one',
+    label: '1',
+    pathD: 'M 150 35 L 120 55 L 120 215 L 180 215'
+  },
+  {
+    id: 'two',
+    label: '2',
+    // Print-style 2: curved top, diagonal down, flat base
+    pathD: 'M 100 60 C 130 40 170 40 195 65 C 210 85 210 110 195 135 C 175 165 140 190 110 215 L 190 215'
+  },
+  {
+    id: 'three',
+    label: '3',
+    pathD: 'M 115 45 C 175 40 190 75 180 105 C 170 130 140 135 160 150 C 190 165 195 195 170 215 C 130 235 95 220 100 185'
+  },
+  {
+    id: 'four',
+    label: '4',
+    // Print-style 4: vertical down, diagonal up-right, horizontal across
+    pathD: 'M 175 40 L 115 120 L 115 215 L 185 215 L 185 120 L 115 120'
+  },
+  {
+    id: 'five',
+    label: '5',
+    // Print-style 5: horizontal top, vertical down, curved belly
+    pathD: 'M 185 50 L 115 50 L 115 110 C 115 160 145 210 185 210 C 215 210 225 185 225 155'
+  },
+  {
+    id: 'six',
+    label: '6',
+    // Print-style 6: curved top down into closed loop at bottom
+    pathD: 'M 175 45 C 130 55 105 95 105 145 C 105 195 140 225 180 225 C 220 225 240 190 240 150 C 240 105 210 75 175 75 C 150 75 135 90 135 115'
+  },
+  {
+    id: 'seven',
+    label: '7',
+    pathD: 'M 105 50 L 195 50 L 145 215'
+  },
+  {
+    id: 'eight',
+    label: '8',
+    // Print-style 8: two stacked loops, top then bottom
+    pathD: 'M 150 95 C 185 95 205 75 205 55 C 205 35 185 25 150 25 C 115 25 95 45 95 65 C 95 85 115 95 150 95 C 185 95 205 115 205 145 C 205 185 185 225 150 225 C 115 225 95 195 95 155 C 95 115 115 95 150 95'
+  },
+  {
+    id: 'nine',
+    label: '9',
+    // Print-style 9: loop at top, curved tail down
+    pathD: 'M 150 95 C 185 95 205 75 205 55 C 205 35 185 25 150 25 C 115 25 95 45 95 65 C 95 85 115 95 150 95 C 150 95 150 140 135 185 C 125 210 110 225 95 225'
   }
 ];
 
@@ -74,6 +130,21 @@ let isComplete    = false;
 let lastLogical   = null;
 let mouseIsDown   = false;
 let completionPath = null; // [{x, y, onTrack}] — drawn after auto-complete
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+let audioMuted = false;
+
+function speak(text, options) {
+  if (audioMuted) return;
+  if (!('speechSynthesis' in window)) return;
+  const rate = (options && options.rate) || 0.9;
+  const pitch = (options && options.pitch) || 1.0;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = rate;
+  utterance.pitch = pitch;
+  utterance.volume = 1.0;
+  speechSynthesis.speak(utterance);
+}
 
 // ── DOM refs (filled in after ready) ─────────────────────────────────────────
 let canvasEl, ctx, canvasWrapper;
@@ -107,6 +178,10 @@ $(document).ready(function () {
     loadImage((currentIdx + 1) % IMAGES.length);
   });
   document.getElementById('reset-btn').addEventListener('click', resetTracing);
+  document.getElementById('mute-btn').addEventListener('click', function () {
+    audioMuted = !audioMuted;
+    this.textContent = audioMuted ? '\uD83D\uDD07 Unmute' : '\uD83D\uDD0A Mute';
+  });
 
   // Touch / mouse events on canvas
   setupInputEvents();
@@ -170,6 +245,7 @@ function loadImage(idx) {
   const img  = IMAGES[idx];
 
   shapeLabel.textContent = img.label;
+  speak(img.label);
 
   const result  = samplePath(img.pathD, NUM_SAMPLES);
   sampledPoints = result.points;
@@ -490,6 +566,7 @@ function animateCompletion() {
 
 function showCompletionSuccess() {
   setFeedback('complete', 'Perfect! \u2705');  // ✅
+  speak('Perfect! ' + IMAGES[currentIdx].label + '!');
   render();
 
   const overlay = document.createElement('div');

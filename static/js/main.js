@@ -79,7 +79,7 @@ const IMAGES = [
     id: 'four',
     label: '4',
     // Print-style 4: diagonal down-left, horizontal right, then vertical down (continuous single stroke)
-    pathD: 'M 180 40 L 95 155 L 215 155 L 215 225'
+    pathD: 'M 165 40 L 115 75 L 115 215 L 185 215 L 185 85'
   },
   {
     id: 'five',
@@ -134,12 +134,33 @@ let completionPath = null; // [{x, y, onTrack}] — drawn after auto-complete
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 let audioMuted = false;
+let hasUserGesture = false;
+let pendingSpeech = null; // buffered while waiting for first user gesture
+
+// Chrome blocks speechSynthesis until a user gesture has occurred.
+// We listen for the first interaction, then flush any buffered speech.
+document.addEventListener('click',      unlockAudio, { once: true, capture: true });
+document.addEventListener('touchstart', unlockAudio, { once: true, capture: true });
+
+function unlockAudio() {
+  hasUserGesture = true;
+  if (pendingSpeech !== null) {
+    const text = pendingSpeech;
+    pendingSpeech = null;
+    speak(text);
+  }
+}
 
 function speak(text, options) {
   if (audioMuted) return;
   if (!('speechSynthesis' in window)) return;
+  if (!hasUserGesture) {
+    pendingSpeech = text; // will be spoken on first gesture
+    return;
+  }
   const rate = (options && options.rate) || 0.9;
   const pitch = (options && options.pitch) || 1.0;
+  speechSynthesis.cancel(); // clear any stuck utterance
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = rate;
   utterance.pitch = pitch;

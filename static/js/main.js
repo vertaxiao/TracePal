@@ -61,7 +61,8 @@ const IMAGES = [
   {
     id: 'one',
     label: '1',
-    pathD: 'M 150 35 L 120 55 L 120 215 L 180 215'
+    // Print-style 1: small top flag, straight vertical stroke down
+    pathD: 'M 135 45 L 165 45 L 150 55 L 150 225'
   },
   {
     id: 'two',
@@ -77,20 +78,20 @@ const IMAGES = [
   {
     id: 'four',
     label: '4',
-    // Print-style 4: vertical down, diagonal up-right, horizontal across
-    pathD: 'M 175 40 L 115 120 L 115 215 L 185 215 L 185 120 L 115 120'
+    // Print-style 4: diagonal down-left, horizontal right, then vertical down (continuous single stroke)
+    pathD: 'M 180 40 L 95 155 L 215 155 L 215 225'
   },
   {
     id: 'five',
     label: '5',
-    // Print-style 5: horizontal top, vertical down, curved belly
-    pathD: 'M 185 50 L 115 50 L 115 110 C 115 160 145 210 185 210 C 215 210 225 185 225 155'
+    // Print-style 5: horizontal top, vertical down, curved belly closing right
+    pathD: 'M 190 50 L 110 50 L 100 130 C 122 103 220 118 220 170 C 220 215 190 242 150 242 C 110 242 88 215 88 180'
   },
   {
     id: 'six',
     label: '6',
-    // Print-style 6: curved top down into closed loop at bottom
-    pathD: 'M 175 45 C 130 55 105 95 105 145 C 105 195 140 225 180 225 C 220 225 240 190 240 150 C 240 105 210 75 175 75 C 150 75 135 90 135 115'
+    // Print-style 6: curved stroke down from top-right, looping into closed circle at bottom (simplified single stroke)
+    pathD: 'M 185 45 C 145 35 95 75 95 145 C 95 205 125 245 165 245 C 205 245 225 205 225 155 C 225 105 195 75 165 75 C 125 75 105 105 105 145'
   },
   {
     id: 'seven',
@@ -100,14 +101,14 @@ const IMAGES = [
   {
     id: 'eight',
     label: '8',
-    // Print-style 8: two stacked loops, top then bottom
-    pathD: 'M 150 95 C 185 95 205 75 205 55 C 205 35 185 25 150 25 C 115 25 95 45 95 65 C 95 85 115 95 150 95 C 185 95 205 115 205 145 C 205 185 185 225 150 225 C 115 225 95 195 95 155 C 95 115 115 95 150 95'
+    // Print-style 8: two equal stacked loops starting from the waist
+    pathD: 'M 150 145 C 192 145 218 122 218 90 C 218 58 192 35 150 35 C 108 35 82 58 82 90 C 82 122 108 145 150 145 C 192 145 218 168 218 200 C 218 232 192 255 150 255 C 108 255 82 232 82 200 C 82 168 108 145 150 145'
   },
   {
     id: 'nine',
     label: '9',
-    // Print-style 9: loop at top, curved tail down
-    pathD: 'M 150 95 C 185 95 205 75 205 55 C 205 35 185 25 150 25 C 115 25 95 45 95 65 C 95 85 115 95 150 95 C 150 95 150 140 135 185 C 125 210 110 225 95 225'
+    // Print-style 9: circle at top, tail curving down-right
+    pathD: 'M 215 92 C 215 50 188 30 150 30 C 112 30 85 52 85 92 C 85 132 112 155 150 155 C 188 155 215 132 215 92 C 215 130 198 210 168 248'
   }
 ];
 

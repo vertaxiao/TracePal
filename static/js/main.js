@@ -5,111 +5,23 @@
 
 'use strict';
 
-// ── Image definitions (SVG paths in a 300×300 logical coordinate space) ──────
+// ── Image definitions (SVG files in a 300×300 logical coordinate space) ──────
 const IMAGES = [
-  {
-    id: 'circle',
-    label: 'Circle',
-    pathD: 'M 150 30 A 120 120 0 1 1 150 270 A 120 120 0 1 1 150 30 Z'
-  },
-  {
-    id: 'square',
-    label: 'Square',
-    pathD: 'M 60 60 L 240 60 L 240 240 L 60 240 L 60 60 Z'
-  },
-  {
-    id: 'apple',
-    label: 'Apple',
-    // Round body with a small concave indent at the top centre.
-    // Start at the indent point, work clockwise.
-    pathD: 'M 150,82 C 130,55 90,52 72,72 C 48,85 38,120 44,158 ' +
-           'C 52,205 96,252 150,255 ' +
-           'C 204,252 248,205 256,158 ' +
-           'C 262,120 252,85 228,72 ' +
-           'C 210,52 170,55 150,82 Z'
-  },
-  {
-    id: 'banana',
-    label: 'Banana',
-    // Elongated curved banana with tapered ends.
-    // Start at bottom-left, curve up through the top, back down.
-    pathD: 'M 60,220 ' +
-           'C 50,180 45,140 55,100 ' +
-           'C 70,50 110,25 160,20 ' +
-           'C 210,18 250,35 270,70 ' +
-           'C 280,95 275,125 260,155 ' +
-           'C 245,185 220,210 190,225 ' +
-           'C 160,238 130,242 100,238 ' +
-           'C 80,235 65,228 60,220 Z'
-  },
-  {
-    id: 'dog',
-    label: 'Dog',
-    // Cartoon dog-head outline: round face with floppy-ear bumps at the top.
-    pathD: 'M 110,82 Q 78,38 58,68 Q 38,100 62,132 ' +
-           'Q 50,162 66,188 Q 80,222 115,242 ' +
-           'Q 132,252 150,254 Q 168,252 185,242 ' +
-           'Q 220,222 234,188 Q 250,162 238,132 ' +
-           'Q 262,100 242,68 Q 222,38 190,82 ' +
-           'Q 168,56 150,60 Q 132,56 110,82 Z'
-  },
-  {
-    id: 'zero',
-    label: '0',
-    pathD: 'M 150 25 C 195 25 220 65 220 125 C 220 185 195 225 150 225 C 105 225 80 185 80 125 C 80 65 105 25 150 25 Z'
-  },
-  {
-    id: 'one',
-    label: '1',
-    // Print-style 1: small top flag, straight vertical stroke down
-    pathD: 'M 135 45 L 165 45 L 150 55 L 150 225'
-  },
-  {
-    id: 'two',
-    label: '2',
-    // Print-style 2: curved top, diagonal down, flat base
-    pathD: 'M 100 60 C 130 40 170 40 195 65 C 210 85 210 110 195 135 C 175 165 140 190 110 215 L 190 215'
-  },
-  {
-    id: 'three',
-    label: '3',
-    pathD: 'M 115 45 C 175 40 190 75 180 105 C 170 130 140 135 160 150 C 190 165 195 195 170 215 C 130 235 95 220 100 185'
-  },
-  {
-    id: 'four',
-    label: '4',
-    // Print-style 4: diagonal down-left, horizontal right, then vertical down (continuous single stroke)
-    pathD: 'M 165 40 L 115 100 M 115 100 L 185 100 M 185 40 L 185 215'
-  },
-  {
-    id: 'five',
-    label: '5',
-    // Print-style 5: horizontal top, vertical down, curved belly closing right
-    pathD: 'M 190 50 L 110 50 L 100 130 C 122 103 220 118 220 170 C 220 215 190 242 150 242 C 110 242 88 215 88 180'
-  },
-  {
-    id: 'six',
-    label: '6',
-    // Print-style 6: curved stroke down from top-right, looping into closed circle at bottom (simplified single stroke)
-    pathD: 'M 185 45 C 145 35 95 75 95 145 C 95 205 125 245 165 245 C 205 245 225 205 225 155 C 225 105 195 75 165 75 C 125 75 105 105 105 145'
-  },
-  {
-    id: 'seven',
-    label: '7',
-    pathD: 'M 105 50 L 195 50 L 145 215'
-  },
-  {
-    id: 'eight',
-    label: '8',
-    // Print-style 8: two equal stacked loops starting from the waist
-    pathD: 'M 150 145 C 192 145 218 122 218 90 C 218 58 192 35 150 35 C 108 35 82 58 82 90 C 82 122 108 145 150 145 C 192 145 218 168 218 200 C 218 232 192 255 150 255 C 108 255 82 232 82 200 C 82 168 108 145 150 145'
-  },
-  {
-    id: 'nine',
-    label: '9',
-    // Print-style 9: circle at top, tail curving down-right
-    pathD: 'M 215 92 C 215 50 188 30 150 30 C 112 30 85 52 85 92 C 85 132 112 155 150 155 C 188 155 215 132 215 92 C 215 130 198 210 168 248'
-  }
+  { id: 'circle',  label: 'Circle', svgFile: '/static/assets/icons/circle.svg' },
+  { id: 'square',  label: 'Square', svgFile: '/static/assets/icons/square.svg' },
+  { id: 'apple',   label: 'Apple',  svgFile: '/static/assets/icons/apple.svg' },
+  { id: 'banana',  label: 'Banana', svgFile: '/static/assets/icons/banana.svg' },
+  { id: 'dog',     label: 'Dog',    svgFile: '/static/assets/icons/dog.svg' },
+  { id: 'zero',    label: '0',      svgFile: '/static/assets/icons/zero.svg' },
+  { id: 'one',     label: '1',      svgFile: '/static/assets/icons/one.svg' },
+  { id: 'two',     label: '2',      svgFile: '/static/assets/icons/two.svg' },
+  { id: 'three',   label: '3',      svgFile: '/static/assets/icons/three.svg' },
+  { id: 'four',    label: '4',      svgFile: '/static/assets/icons/four.svg' },
+  { id: 'five',    label: '5',      svgFile: '/static/assets/icons/five.svg' },
+  { id: 'six',     label: '6',      svgFile: '/static/assets/icons/six.svg' },
+  { id: 'seven',   label: '7',      svgFile: '/static/assets/icons/seven.svg' },
+  { id: 'eight',   label: '8',      svgFile: '/static/assets/icons/eight.svg' },
+  { id: 'nine',    label: '9',      svgFile: '/static/assets/icons/nine.svg' }
 ];
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -240,6 +152,27 @@ function samplePath(pathD, n) {
   return { points: points, length: len };
 }
 
+// ── Load SVG path data from external file ────────────────────────────────────
+function loadSvgPathData(svgFileUrl, callback) {
+  fetch(svgFileUrl)
+    .then(response => response.text())
+    .then(svgText => {
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+      const pathEl = svgDoc.querySelector('path');
+      if (pathEl) {
+        callback(pathEl.getAttribute('d'));
+      } else {
+        console.error('No path element found in SVG:', svgFileUrl);
+        callback(null);
+      }
+    })
+    .catch(err => {
+      console.error('Failed to load SVG:', svgFileUrl, err);
+      callback(null);
+    });
+}
+
 // ── Load an image by index ────────────────────────────────────────────────────
 function loadImage(idx) {
   currentIdx = idx;
@@ -248,11 +181,18 @@ function loadImage(idx) {
   shapeLabel.textContent = img.label;
   speak(img.label);
 
-  const result  = samplePath(img.pathD, NUM_SAMPLES);
-  sampledPoints = result.points;
-
-  resetTracing();
-  updateDots();
+  // Load SVG path data from external file
+  loadSvgPathData(img.svgFile, function(pathD) {
+    if (pathD) {
+      img.pathD = pathD;  // Store path data on image object for render()
+      const result  = samplePath(pathD, NUM_SAMPLES);
+      sampledPoints = result.points;
+      resetTracing();
+      updateDots();
+    } else {
+      console.error('Failed to load path data for:', img.label);
+    }
+  });
 }
 
 // ── Reset tracing state ───────────────────────────────────────────────────────

@@ -1,21 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
-  <!-- Banana: thick crescent with parallel curves, rounded ends, visible stem -->
-  <!-- Stem at top -->
-  <path d="M 188,52 C 192,42 198,38 196,48 L 192,60" fill="none" stroke="#7B6323" stroke-width="5" stroke-linecap="round"/>
-  <!-- Main banana body: wide, parallel-sided crescent -->
+  <!-- Banana: single continuous outline path, crescent shape with stem -->
+  <!-- Recognizable from outline alone: curved crescent body + small stem nub -->
   <path d="
-    M 190,62
-    C 220,100 240,160 230,220
-    C 224,252 200,272 170,280
-    C 158,284 148,278 155,270
-    C 178,256 196,232 204,200
-    C 216,152 208,104 188,68
+    M 155,55
+    C 152,48 156,40 162,42
+    C 168,44 166,52 164,58
+    L 162,65
+    C 175,62 188,68 198,82
+    C 215,108 225,148 222,192
+    C 220,228 206,258 178,274
+    C 166,281 152,284 142,278
+    C 134,273 136,264 144,260
+    C 160,250 174,234 182,212
+    C 192,184 196,152 190,122
+    C 185,96 174,78 158,68
+    L 155,55
     Z
-  " fill="#FFE135" stroke="#B89628" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Inner curve highlight to show banana thickness -->
-  <path d="
-    M 185,72
-    C 210,108 224,160 216,216
-    C 212,238 198,256 180,268
-  " fill="none" stroke="#F5D800" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  " fill="none" stroke="#B89628" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

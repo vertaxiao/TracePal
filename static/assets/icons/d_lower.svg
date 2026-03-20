@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase d: round bowl on left + tall stem on right -->
+  <path d="M 195 40 L 195 240 M 195 120 C 195 80 125 65 95 110 C 65 155 80 230 125 240 C 160 248 195 225 195 190"/>
+</svg>

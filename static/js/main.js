@@ -53,6 +53,8 @@ let isComplete    = false;
 let lastLogical   = null;
 let mouseIsDown   = false;
 let completionPath = null; // [{x, y, onTrack}] — drawn after auto-complete
+let isShuffled     = false;
+let imageOrder     = [];   // index mapping: imageOrder[i] = original IMAGES index
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 let audioMuted = false;
@@ -74,6 +76,23 @@ let canvasEl, ctx, canvasWrapper;
 let feedbackMsg, progressBar, shapeLabel, startIndicatorEl;
 let displaySize = 0;   // CSS pixels — updated on setup/resize
 
+// ── Shuffle helpers ──────────────────────────────────────────────────────────
+function initOrder() {
+  imageOrder = IMAGES.map(function (_, i) { return i; });
+}
+
+function shuffleOrder() {
+  // Fisher-Yates shuffle
+  for (let i = imageOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = imageOrder[i];
+    imageOrder[i] = imageOrder[j];
+    imageOrder[j] = tmp;
+  }
+}
+
+initOrder(); // default: sequential
+
 // ── jQuery ready ──────────────────────────────────────────────────────────────
 $(document).ready(function () {
   canvasEl         = document.getElementById('trace-canvas');
@@ -85,22 +104,17 @@ $(document).ready(function () {
   startIndicatorEl = document.getElementById('start-indicator');
 
   // Build dot indicators
-  const dotsContainer = document.getElementById('dot-indicators');
-  IMAGES.forEach(function (img, i) {
-    const dot = document.createElement('div');
-    dot.className = 'dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', function () { loadImage(i); });
-    dotsContainer.appendChild(dot);
-  });
+  buildDots();
 
   // Button handlers
   document.getElementById('prev-btn').addEventListener('click', function () {
-    loadImage((currentIdx - 1 + IMAGES.length) % IMAGES.length);
+    loadImage((currentIdx - 1 + imageOrder.length) % imageOrder.length);
   });
   document.getElementById('next-btn').addEventListener('click', function () {
-    loadImage((currentIdx + 1) % IMAGES.length);
+    loadImage((currentIdx + 1) % imageOrder.length);
   });
   document.getElementById('reset-btn').addEventListener('click', resetTracing);
+  document.getElementById('shuffle-btn').addEventListener('click', toggleShuffle);
   document.getElementById('mute-btn').addEventListener('click', function () {
     audioMuted = !audioMuted;
     this.textContent = audioMuted ? '\uD83D\uDD07 Unmute' : '\uD83D\uDD0A Mute';
@@ -186,7 +200,7 @@ function loadSvgPathData(svgFileUrl, callback) {
 // ── Load an image by index ────────────────────────────────────────────────────
 function loadImage(idx) {
   currentIdx = idx;
-  const img  = IMAGES[idx];
+  const img  = IMAGES[imageOrder[idx]];
 
   shapeLabel.textContent = img.label;
   speak(img.label);
@@ -257,7 +271,7 @@ function render() {
 }
 
 function drawGuide() {
-  const img   = IMAGES[currentIdx];
+  const img   = IMAGES[imageOrder[currentIdx]];
   const scale = displaySize / LOGICAL_SIZE;
 
   ctx.save();
@@ -517,7 +531,7 @@ function animateCompletion() {
 
 function showCompletionSuccess() {
   setFeedback('complete', 'Perfect! \u2705');  // ✅
-  speak('Perfect! ' + IMAGES[currentIdx].label + '!');
+  speak('Perfect! ' + IMAGES[imageOrder[currentIdx]].label + '!');
   render();
 
   const overlay = document.createElement('div');
@@ -527,7 +541,7 @@ function showCompletionSuccess() {
 
   setTimeout(function () {
     if (isComplete) {
-      loadImage((currentIdx + 1) % IMAGES.length);
+      loadImage((currentIdx + 1) % imageOrder.length);
     }
   }, 2000);
 }
@@ -544,8 +558,39 @@ function setFeedback(state, msg) {
 }
 
 // ── Dot indicators ────────────────────────────────────────────────────────────
+function buildDots() {
+  const dotsContainer = document.getElementById('dot-indicators');
+  dotsContainer.innerHTML = '';
+  imageOrder.forEach(function (_, i) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', function () { loadImage(i); });
+    dotsContainer.appendChild(dot);
+  });
+}
+
 function updateDots() {
   document.querySelectorAll('.dot').forEach(function (dot, i) {
     dot.classList.toggle('active', i === currentIdx);
   });
+}
+
+// ── Shuffle ──────────────────────────────────────────────────────────────────
+function toggleShuffle() {
+  const btn = document.getElementById('shuffle-btn');
+  if (isShuffled) {
+    // Unshuffle: restore sequential order
+    isShuffled = false;
+    initOrder();
+    btn.classList.remove('btn-info');
+    btn.classList.add('btn-outline-info');
+  } else {
+    // Shuffle
+    isShuffled = true;
+    shuffleOrder();
+    btn.classList.remove('btn-outline-info');
+    btn.classList.add('btn-info');
+  }
+  buildDots();
+  loadImage(0);
 }

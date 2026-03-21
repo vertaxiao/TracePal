@@ -4,11 +4,28 @@
 This document defines test coverage requirements for all TracePal features. Update this spec after every major decision (new feature, refactoring, architectural change).
 
 ## Test Framework
-- **Unit tests**: TBD (future: Jest for JS, pytest for Python)
+- **Unit tests**: Jest (JavaScript) - 41 tests, all passing ✅
 - **Integration tests**: Manual testing on Chrome, Safari (iOS/iPadOS)
 - **E2E**: Manual trace testing + voice verification
+- **Visual regression**: Manual checklist per PR (future: automated)
 
 ## Test Execution
+```bash
+# Run all Jest unit tests (fast: ~0.15s)
+cd ~/TracePal
+npm test
+
+# Run with verbose output
+npm test -- --verbose
+
+# Run specific test file
+npm test -- tests/tracing-logic.test.js
+
+# Watch mode (auto-rerun on file change)
+npm test -- --watch
+```
+
+### Manual Testing (Still Required)
 ```bash
 # Start app locally
 cd ~/TracePal
@@ -33,10 +50,10 @@ python app.py
 | one | Number 1 | Trace vertical line | Single stroke accepted | ✅ |
 | two | Number 2 | Trace curved path | Multi-stroke handled | ✅ |
 | three | Number 3 | Trace dual curves | Complex number path | ✅ |
-| four | Number 4 | Trace angular path | Vertical-from-top design (final iteration) | ✅ |
+| four | Number 4 | Trace angular path | **2 separate strokes**, vertical-from-top design | ✅ |
 | five-nine | Numbers 5-9 | Trace each | All number shapes recognizable | ✅ |
-| A/a | Letters | Trace uppercase/lowercase | Print-style letterforms (Veya design) | ✅ |
-| B/b-E/e | Letters | Trace uppercase/lowercase | All letter shapes LD-accessible | ✅ |
+| A/a | Letters | Trace uppercase/lowercase | **3 strokes (A)**, print-style letterforms | ✅ |
+| B/b-E/e | Letters | Trace uppercase/lowercase | **4 strokes (E)**, all letter shapes LD-accessible | ✅ |
 
 **Test file:** `static/js/main.js` (shape definitions + tracing logic)
 
@@ -48,6 +65,7 @@ python app.py
 | Tolerance check | Trace within 22px of path | Points marked as "on track" | ✅ |
 | Out of tolerance | Trace >50px from path | No coverage credited | ✅ |
 | Start indicator | Page loads | Blinking green dot shows starting point | ✅ |
+| Multi-stroke completion | Complete all strokes | Shape completes when ALL strokes reach 95% | ✅ |
 
 ### 3. Voice Feedback (Web Speech API)
 | Test Case | Steps | Expected | Status |
@@ -65,11 +83,13 @@ python app.py
 | Test Case | Steps | Expected | Status |
 |-----------|-------|----------|--------|
 | SVG load | Shape selected | SVG path renders on canvas | ✅ |
-| Guide line | Before tracing | 20px wide guide line visible | ✅ |
-| User stroke | During tracing | 8px user stroke follows input | ✅ |
-| Completion path | Auto-complete | Green completion path drawn | ✅ |
+| Guide line | Before tracing | 20px wide guide line visible (gray #c8c8c8) | ✅ |
+| User stroke | During tracing | 8px user stroke follows input (blue #007bff) | ✅ |
+| Completion path | Auto-complete | Green completion path drawn (#28a745) | ✅ |
 | Touch input | Touch/stroke on canvas | Tracing registers correctly | ✅ |
 | Mouse input | Click+drag on desktop | Tracing works with mouse | ✅ |
+| Multi-stroke guide | During tracing | ONLY current stroke's guide visible (not all) | ✅ |
+| Completed strokes | After stroke completes | Stroke renders green, separate from user path | ✅ |
 
 ### 5. Shuffling & Navigation
 | Test Case | Steps | Expected | Status |
@@ -88,18 +108,45 @@ python app.py
 | Visual clarity | High contrast | Clear guide line vs user stroke | ⚠️ Manual |
 | No animation delay | Completion | Instant fill (no animation) | ✅ |
 
+## Visual Regression Checklist (Per PR)
+
+**⚠️ BEFORE merging ANY UI/visual change, verify:**
+
+| Check | How to Verify | Automated? |
+|-------|---------------|------------|
+| No extra visible lines | Load shape, verify only guide + user stroke visible | ❌ Manual |
+| SVG path definitions | Check SVG files - no `stroke` attributes on `<path>` | ✅ Code review |
+| Guide shows current stroke only | Verify only active stroke's guide visible (not all incomplete) | ❌ Manual |
+| User stroke color | Blue (#007bff) while tracing | ✅ Manual |
+| Completed stroke color | Green (#28a745) after 95% | ✅ Manual |
+| Multi-stroke SVGs | `data-stroke` attributes present, `stroke="none"` | ✅ Code review |
+| Single-stroke unchanged | Circle, square still work | ✅ Jest tests |
+
+**How to check SVGs:**
+```bash
+# Check for visible stroke attributes (should NOT exist)
+grep -r 'stroke="#' static/assets/icons/*.svg
+
+# Verify multi-stroke SVGs have stroke="none"
+grep 'stroke="none"' static/assets/icons/four.svg
+grep 'stroke="none"' static/assets/icons/a_upper.svg
+grep 'stroke="none"' static/assets/icons/e_upper.svg
+```
+
 ## Refactoring Test Checklist
 
 ### Before Any Refactoring
-1. **Read this spec** - Identify affected shapes/features
+1. **Read this spec** - Identify affected features
 2. **Manual smoke test** - Trace 2-3 shapes, verify voice
 3. **Update this spec** - Add test cases if behavior changes
+4. **Run visual regression checklist** - Verify no visual regressions
 
 ### After Refactoring
 1. **Test all 25 shapes** - Ensure path recognition unchanged
 2. **Voice test** - Verify shape announcements + "Perfect!"
 3. **Mobile test** - iPhone/iPad touch tracing
-4. **Update this spec** - Document what changed
+4. **Visual regression checklist** - No extra lines, colors correct
+5. **Update this spec** - Document what changed
 
 ### Test Coverage Requirements
 | Change Type | Required Tests |
@@ -107,7 +154,8 @@ python app.py
 | New shape | Manual trace test + SVG path verification |
 | Voice changes | All voice announcements tested |
 | Canvas refactor | All 25 shapes + touch + mouse |
-| UI changes | Mobile layout manual test |
+| UI changes | Mobile layout manual test + visual regression checklist |
+| Multi-stroke logic | Jest unit tests + visual regression checklist |
 | Performance | No regression in tracing responsiveness |
 
 ## Manual Testing Checklist (Per Release)
@@ -118,6 +166,7 @@ python app.py
 - [ ] Voice announcements work
 - [ ] Mute toggle works
 - [ ] Completion auto-triggers at 95%
+- [ ] No extra visible lines (clean blue tracing)
 
 ### Mobile (iPhone Safari)
 - [ ] Touch tracing accurate
@@ -125,6 +174,7 @@ python app.py
 - [ ] Voice works (or graceful fallback)
 - [ ] No touch delay
 - [ ] LD-accessible (clear paths, instant feedback)
+- [ ] Visual clarity (no clutter, clean guide)
 
 ### Tablet (iPad Safari + Apple Pencil)
 - [ ] Apple Pencil precision
@@ -132,6 +182,7 @@ python app.py
 - [ ] All shapes traceable
 - [ ] Voice feedback appropriate
 - [ ] Print-style letterforms (Veya design)
+- [ ] Multi-stroke shapes (4, A, E) work correctly
 
 ## Veya Design Principles Verification
 Per release, verify against Veya's LD accessibility principles:
@@ -141,12 +192,12 @@ Per release, verify against Veya's LD accessibility principles:
 - [ ] Blinking green start indicator
 - [ ] 95% threshold (not perfection required)
 - [ ] Voice feedback supportive ("Perfect!")
+- [ ] **Visual clarity** - No extra lines, clean UI
 
 ## Known Test Gaps
-- ❌ No automated unit tests (future: Jest)
-- ❌ No visual regression testing for SVG paths
+- ❌ No automated visual regression testing (future: Playwright screenshots)
 - ❌ No performance benchmarks (tracing latency)
-- ⚠️ All testing relies on manual verification
+- ⚠️ Visual checks rely on manual verification + code review
 
 ## Test Maintenance Rules
 1. **New shape** → Add to test matrix + verify path recognition
@@ -154,13 +205,14 @@ Per release, verify against Veya's LD accessibility principles:
 3. **Canvas refactor** → Test all 25 shapes + touch/mouse
 4. **Major decision** → Submit PR with test updates for human review
 5. **Logic changes** → Add Jest unit tests in `tests/` + run `npm test`
+6. **Visual/UI changes** → Run visual regression checklist + manual verification
 
 ## Jest Test Coverage (Automated)
 
-### Implemented Tests (27 passing)
+### Implemented Tests (41 passing)
 | File | Tests | Coverage | Status |
 |------|-------|----------|--------|
-| `tests/tracing-logic.test.js` | 27 | Core logic | ✅ Complete |
+| `tests/tracing-logic.test.js` | 41 | Core logic + multi-stroke | ✅ Complete |
 
 ### Test Suites
 1. **Completion detection** (5 tests) - 95% threshold logic
@@ -168,12 +220,16 @@ Per release, verify against Veya's LD accessibility principles:
 3. **Shape path recognition** (7 tests) - `nearestSample`, tolerance boundaries
 4. **Shuffle/Fisher-Yates** (5 tests) - Permutation correctness
 5. **Coordinate conversion** (3 tests) - Scaling, round-trip
+6. **Multi-stroke detection** (14 tests) - Per-stroke coverage, lift detection
 
 ### Testable Module
 - **`static/js/tracing-logic.js`** - Pure logic extracted from `main.js`
   - `getCoverage()` - 95% threshold calculation
   - `nearestSample()` - Path recognition
   - `updateCoverage()` - Coverage marking with tolerance
+  - `nearestStrokeSample()` - Multi-stroke stroke selection
+  - `getMultiStrokeCoverage()` - Aggregate coverage across strokes
+  - `updateMultiStrokeCoverage()` - Per-stroke coverage update
   - `fisherYatesShuffle()` - Shuffle logic
   - `toLogical()` / `toDisplay()` - Coordinate conversion
 
@@ -184,6 +240,21 @@ Per release, verify against Veya's LD accessibility principles:
 | `tests/touchPointer.test.js` | P1 | Requires browser testing |
 | `tests/navigation.test.js` | P2 | DOM-dependent |
 | `tests/canvasRendering.test.js` | P2 | Visual verification needed |
+| `tests/visualRegression.test.js` | P1 | **Added 2026-03-21** - Guard against visual regressions |
+
+### Visual Regression Tests (New - P1)
+
+**What to automate:**
+- SVG file validation (no `stroke` attributes on multi-stroke paths)
+- Guide rendering (only current stroke visible)
+- User stroke color (blue #007bff)
+- Completed stroke color (green #28a745)
+- No extra lines/artifacts
+
+**How:**
+- Screenshot comparison (future: Playwright visual regression)
+- SVG file linting (regex check for `stroke="none"`)
+- Manual checklist per PR (current)
 
 ## Human Review Required
 After updating this spec or making changes:
@@ -191,9 +262,11 @@ After updating this spec or making changes:
 - **Design review**: Veya (for LD accessibility)
 - **Submit PR**: Include test changes + spec updates
 - **Review on**: iPhone + iPad (touch tracing verification)
+- **Visual regression**: Run checklist before merge
 
 ## Last Updated
 - **Date**: 2026-03-21
 - **Change**: Initial test spec created per PROJECT.md convention
-- **PR**: Pending (part of project-manifest PR)
+- **Update**: Added visual regression checklist + multi-stroke tests (41 total)
 - **Shapes**: 25 total (5 base + 10 numbers + 10 letters)
+- **Multi-stroke**: 4, A, E (fixed regressions 2026-03-21)

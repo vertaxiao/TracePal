@@ -24,6 +24,7 @@ Shape tracing app for learning disabilities (LD) accessibility - traces shapes/n
 - Before shape changes → consult Veya design principles (LD accessibility, print-style)
 - Before voice changes → read voice implementation in `main.js`
 - Test on Chrome (Web Speech API compatibility)
+- After major decisions (new features, refactoring) → update `specs/test.md` + submit PR for human review
 - After design decisions → log to `memory/decisions.md`
 
 ## Current Status

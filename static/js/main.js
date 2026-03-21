@@ -56,6 +56,10 @@ let completionPath = null; // [{x, y, onTrack}] — drawn after auto-complete
 let isShuffled     = false;
 let imageOrder     = [];   // index mapping: imageOrder[i] = original IMAGES index
 
+// ── Multi-stroke state ───────────────────────────────────────────────────────
+let strokes        = [];   // [{sampledPoints, coverageMap, complete, pathD}]
+let isMultiStroke  = false;
+
 // ── Audio ─────────────────────────────────────────────────────────────────────
 let audioMuted = false;
 
@@ -177,15 +181,18 @@ function samplePath(pathD, n) {
 }
 
 // ── Load SVG path data from external file ────────────────────────────────────
+// Returns an array of path-d strings (one per <path> element).
 function loadSvgPathData(svgFileUrl, callback) {
   fetch(svgFileUrl)
     .then(response => response.text())
     .then(svgText => {
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
-      const pathEl = svgDoc.querySelector('path');
-      if (pathEl) {
-        callback(pathEl.getAttribute('d'));
+      const pathEls = svgDoc.querySelectorAll('path');
+      if (pathEls.length > 0) {
+        const paths = [];
+        pathEls.forEach(function (el) { paths.push(el.getAttribute('d')); });
+        callback(paths);
       } else {
         console.error('No path element found in SVG:', svgFileUrl);
         callback(null);
@@ -205,12 +212,32 @@ function loadImage(idx) {
   shapeLabel.textContent = img.label;
   speak(img.label);
 
-  // Load SVG path data from external file
-  loadSvgPathData(img.svgFile, function(pathD) {
-    if (pathD) {
-      img.pathD = pathD;  // Store path data on image object for render()
-      const result  = samplePath(pathD, NUM_SAMPLES);
-      sampledPoints = result.points;
+  // Load SVG path data from external file (returns array of path strings)
+  loadSvgPathData(img.svgFile, function(pathDataArray) {
+    if (pathDataArray && pathDataArray.length > 0) {
+      isMultiStroke = pathDataArray.length > 1;
+
+      if (isMultiStroke) {
+        img.pathD = pathDataArray.join(' ');
+        strokes = [];
+        const numPerStroke = Math.max(40, Math.round(NUM_SAMPLES / pathDataArray.length));
+        for (let i = 0; i < pathDataArray.length; i++) {
+          const result = samplePath(pathDataArray[i], numPerStroke);
+          strokes.push({
+            sampledPoints: result.points,
+            coverageMap: new Array(result.points.length).fill(false),
+            complete: false,
+            pathD: pathDataArray[i],
+          });
+        }
+        sampledPoints = strokes[0].sampledPoints;
+      } else {
+        img.pathD = pathDataArray[0];
+        const result = samplePath(pathDataArray[0], NUM_SAMPLES);
+        sampledPoints = result.points;
+        strokes = [];
+      }
+
       resetTracing();
       updateDots();
     } else {
@@ -225,9 +252,17 @@ function resetTracing() {
   isTracing      = false;
   mouseIsDown    = false;
   userPath       = [];
-  coverageMap    = new Array(sampledPoints.length).fill(false);
   lastLogical    = null;
   completionPath = null;
+
+  if (isMultiStroke) {
+    for (let i = 0; i < strokes.length; i++) {
+      strokes[i].coverageMap = new Array(strokes[i].sampledPoints.length).fill(false);
+      strokes[i].complete = false;
+    }
+  } else {
+    coverageMap = new Array(sampledPoints.length).fill(false);
+  }
 
   setFeedback('none', '');
   progressBar.style.width = '0%';
@@ -271,23 +306,31 @@ function render() {
 }
 
 function drawGuide() {
-  const img   = IMAGES[imageOrder[currentIdx]];
   const scale = displaySize / LOGICAL_SIZE;
 
   ctx.save();
   ctx.scale(scale, scale);
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.lineJoin  = 'round';
+  ctx.lineCap   = 'round';
 
-  // Light fill so the shape interior is visible
-  const guide = new Path2D(img.pathD);
-  ctx.fillStyle = 'rgba(200,200,200,0.12)';
-  ctx.fill(guide);
-
-  // Thick light-gray stroke as the tracing guide
-  ctx.strokeStyle   = '#c8c8c8';
-  ctx.lineWidth     = GUIDE_LINE_WIDTH;
-  ctx.lineJoin      = 'round';
-  ctx.lineCap       = 'round';
-  ctx.stroke(guide);
+  if (isMultiStroke) {
+    // Draw each stroke separately so completed strokes render green
+    for (let s = 0; s < strokes.length; s++) {
+      const guide = new Path2D(strokes[s].pathD);
+      ctx.fillStyle   = 'rgba(200,200,200,0.12)';
+      ctx.fill(guide);
+      ctx.strokeStyle = strokes[s].complete ? '#28a745' : '#c8c8c8';
+      ctx.stroke(guide);
+    }
+  } else {
+    const img   = IMAGES[imageOrder[currentIdx]];
+    const guide = new Path2D(img.pathD);
+    ctx.fillStyle   = 'rgba(200,200,200,0.12)';
+    ctx.fill(guide);
+    ctx.strokeStyle = '#c8c8c8';
+    ctx.stroke(guide);
+  }
 
   ctx.restore();
 }
@@ -323,13 +366,22 @@ function drawPath(path) {
 
 // ── Start-indicator positioning ───────────────────────────────────────────────
 function updateStartIndicator() {
-  if (!sampledPoints.length || displaySize === 0) return;
+  if (displaySize === 0) return;
 
-  const start  = sampledPoints[0];
-  const dPos   = toDisplay(start.x, start.y);
-
-  startIndicatorEl.style.left = dPos.x + 'px';
-  startIndicatorEl.style.top  = dPos.y + 'px';
+  if (isMultiStroke) {
+    // Point to the start of the first incomplete stroke
+    const target = strokes.find(function (s) { return !s.complete; }) || strokes[0];
+    if (!target || !target.sampledPoints.length) return;
+    const dPos = toDisplay(target.sampledPoints[0].x, target.sampledPoints[0].y);
+    startIndicatorEl.style.left = dPos.x + 'px';
+    startIndicatorEl.style.top  = dPos.y + 'px';
+  } else {
+    if (!sampledPoints.length) return;
+    const start = sampledPoints[0];
+    const dPos  = toDisplay(start.x, start.y);
+    startIndicatorEl.style.left = dPos.x + 'px';
+    startIndicatorEl.style.top  = dPos.y + 'px';
+  }
 }
 
 // ── Nearest sample point ──────────────────────────────────────────────────────
@@ -347,11 +399,35 @@ function nearestSample(lx, ly) {
 
 // ── Coverage percentage ───────────────────────────────────────────────────────
 function getCoverage() {
+  if (isMultiStroke) {
+    return getOverallCoverage();
+  }
   let count = 0;
   for (let i = 0; i < coverageMap.length; i++) {
     if (coverageMap[i]) count++;
   }
   return count / coverageMap.length;
+}
+
+function getStrokeCoverage(map) {
+  let count = 0;
+  for (let i = 0; i < map.length; i++) {
+    if (map[i]) count++;
+  }
+  return count / map.length;
+}
+
+function getOverallCoverage() {
+  let totalCovered = 0;
+  let totalPoints  = 0;
+  for (let s = 0; s < strokes.length; s++) {
+    const map = strokes[s].coverageMap;
+    for (let i = 0; i < map.length; i++) {
+      totalPoints++;
+      if (map[i]) totalCovered++;
+    }
+  }
+  return totalPoints === 0 ? 0 : totalCovered / totalPoints;
 }
 
 // ── Touch / mouse event setup ─────────────────────────────────────────────────
@@ -442,10 +518,18 @@ function endTrace() {
   if (!isComplete && getCoverage() < 0.03) {
     setFeedback('none', '');
   }
+
+  // For multi-stroke, show start indicator for next incomplete stroke
+  if (isMultiStroke && !isComplete) {
+    updateStartIndicator();
+    startIndicatorEl.style.opacity = '1';
+  }
 }
 
 // ── Process a single logical point ───────────────────────────────────────────
 function processPoint(lx, ly) {
+  if (isMultiStroke) { processPointMultiStroke(lx, ly); return; }
+
   const { idx, dist } = nearestSample(lx, ly);
 
   // Only give feedback when close to the path
@@ -487,6 +571,68 @@ function processPoint(lx, ly) {
   render();
 }
 
+// ── Multi-stroke point processing ────────────────────────────────────────────
+function processPointMultiStroke(lx, ly) {
+  // Find nearest stroke and sample
+  let minDist = Infinity;
+  let bestStroke = 0;
+  let bestIdx = 0;
+
+  for (let s = 0; s < strokes.length; s++) {
+    const pts = strokes[s].sampledPoints;
+    for (let i = 0; i < pts.length; i++) {
+      const dx = pts[i].x - lx;
+      const dy = pts[i].y - ly;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < minDist) { minDist = d; bestStroke = s; bestIdx = i; }
+    }
+  }
+
+  if (minDist > NEAR_PATH) {
+    userPath.push({ x: lx, y: ly, onTrack: false });
+    render();
+    return;
+  }
+
+  const onTrack = minDist <= TOLERANCE;
+  userPath.push({ x: lx, y: ly, onTrack: onTrack });
+
+  const stroke = strokes[bestStroke];
+
+  if (onTrack && !stroke.complete) {
+    for (let i = Math.max(0, bestIdx - 4); i <= Math.min(stroke.sampledPoints.length - 1, bestIdx + 4); i++) {
+      const dx = stroke.sampledPoints[i].x - lx;
+      const dy = stroke.sampledPoints[i].y - ly;
+      if (Math.sqrt(dx * dx + dy * dy) <= TOLERANCE) {
+        stroke.coverageMap[i] = true;
+      }
+    }
+
+    // Check if this stroke just completed
+    if (!stroke.complete && getStrokeCoverage(stroke.coverageMap) >= COMPLETION_RATIO) {
+      stroke.complete = true;
+    }
+
+    setFeedback('on-track', 'Great tracing! Keep going!');
+  } else if (!onTrack) {
+    setFeedback('off-track', 'Get back on the line!');
+  }
+
+  // Update progress bar (overall coverage)
+  const coverage = getOverallCoverage();
+  const pct = Math.min(100, Math.round(coverage * 100));
+  progressBar.style.width = pct + '%';
+  progressBar.setAttribute('aria-valuenow', pct);
+
+  // Check for overall completion (all strokes at 95%)
+  if (strokes.every(function (s) { return s.complete; })) {
+    animateCompletion();
+    return;
+  }
+
+  render();
+}
+
 // ── Auto-complete animation ───────────────────────────────────────────────────
 function animateCompletion() {
   if (isComplete) return;
@@ -494,6 +640,11 @@ function animateCompletion() {
   isTracing  = false;
 
   setFeedback('on-track', 'Almost there!');
+
+  if (isMultiStroke) {
+    animateCompletionMultiStroke();
+    return;
+  }
 
   // Collect uncovered point indices
   const remainingIndices = [];
@@ -521,6 +672,48 @@ function animateCompletion() {
     userPath.push({ x: pt.x, y: pt.y, onTrack: true });
 
     const pct = Math.min(100, Math.round(getCoverage() * 100));
+    progressBar.style.width = pct + '%';
+    progressBar.setAttribute('aria-valuenow', pct);
+
+    render();
+    idx++;
+  }, 20);
+}
+
+function animateCompletionMultiStroke() {
+  // Collect remaining uncovered points across all strokes
+  const remaining = [];
+  for (let s = 0; s < strokes.length; s++) {
+    for (let i = 0; i < strokes[s].sampledPoints.length; i++) {
+      if (!strokes[s].coverageMap[i]) {
+        remaining.push({ strokeIdx: s, sampleIdx: i });
+      }
+    }
+  }
+
+  let idx = 0;
+  const interval = setInterval(function () {
+    if (idx >= remaining.length) {
+      clearInterval(interval);
+      progressBar.style.width = '100%';
+      progressBar.setAttribute('aria-valuenow', '100');
+      // Build completion path from all strokes
+      completionPath = [];
+      for (let s = 0; s < strokes.length; s++) {
+        strokes[s].complete = true;
+        for (let i = 0; i < strokes[s].sampledPoints.length; i++) {
+          var pt = strokes[s].sampledPoints[i];
+          completionPath.push({ x: pt.x, y: pt.y, onTrack: true });
+        }
+      }
+      showCompletionSuccess();
+      return;
+    }
+
+    const r  = remaining[idx];
+    strokes[r.strokeIdx].coverageMap[r.sampleIdx] = true;
+
+    const pct = Math.min(100, Math.round(getOverallCoverage() * 100));
     progressBar.style.width = pct + '%';
     progressBar.setAttribute('aria-valuenow', pct);
 

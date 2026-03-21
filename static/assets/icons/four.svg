@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
-  <!-- Number 4: standard recognizable form - diagonal + crossbar, then vertical stem -->
-  <path d="M 170,50 L 55,190 L 210,190 M 170,50 L 170,258" fill="none" stroke="#B89628" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Number 4: multi-stroke - angle stroke then vertical stem -->
+  <path data-stroke="1" d="M 170,50 L 55,190 L 210,190" fill="none" stroke="#B89628" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path data-stroke="2" d="M 170,50 L 170,258" fill="none" stroke="#B89628" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

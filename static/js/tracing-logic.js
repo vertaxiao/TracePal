@@ -76,6 +76,87 @@ function updateCoverage(sampledPoints, coverageMap, lx, ly, tolerance, nearPath)
 }
 
 /**
+ * Find the nearest stroke and sample point across multiple strokes.
+ * strokePoints: array of point arrays [[{x,y}], [{x,y}], ...]
+ * Returns { strokeIdx, sampleIdx, dist }.
+ */
+function nearestStrokeSample(strokePoints, lx, ly) {
+  var minDist = Infinity;
+  var minStrokeIdx = 0;
+  var minSampleIdx = 0;
+  for (var s = 0; s < strokePoints.length; s++) {
+    var result = nearestSample(strokePoints[s], lx, ly);
+    if (result.dist < minDist) {
+      minDist = result.dist;
+      minStrokeIdx = s;
+      minSampleIdx = result.idx;
+    }
+  }
+  return { strokeIdx: minStrokeIdx, sampleIdx: minSampleIdx, dist: minDist };
+}
+
+/**
+ * Calculate aggregate coverage across multiple stroke coverage maps.
+ * strokeCoverageMaps: array of boolean arrays
+ */
+function getMultiStrokeCoverage(strokeCoverageMaps) {
+  var totalCovered = 0;
+  var totalPoints = 0;
+  for (var s = 0; s < strokeCoverageMaps.length; s++) {
+    var map = strokeCoverageMaps[s];
+    for (var i = 0; i < map.length; i++) {
+      totalPoints++;
+      if (map[i]) totalCovered++;
+    }
+  }
+  return totalPoints === 0 ? 0 : totalCovered / totalPoints;
+}
+
+/**
+ * Update coverage for a multi-stroke shape based on a single logical point.
+ * Finds the nearest stroke, updates that stroke's coverage map.
+ * Returns { onTrack, strokeIdx, coverage, strokeCoverage, feedbackState }.
+ */
+function updateMultiStrokeCoverage(strokePoints, strokeCoverageMaps, lx, ly, tolerance, nearPath) {
+  tolerance = tolerance != null ? tolerance : DEFAULTS.TOLERANCE;
+  nearPath = nearPath != null ? nearPath : DEFAULTS.NEAR_PATH;
+
+  var nearest = nearestStrokeSample(strokePoints, lx, ly);
+
+  if (nearest.dist > nearPath) {
+    return {
+      onTrack: false,
+      strokeIdx: nearest.strokeIdx,
+      coverage: getMultiStrokeCoverage(strokeCoverageMaps),
+      strokeCoverage: getCoverage(strokeCoverageMaps[nearest.strokeIdx]),
+      feedbackState: 'none',
+    };
+  }
+
+  var onTrack = nearest.dist <= tolerance;
+  var pts = strokePoints[nearest.strokeIdx];
+  var map = strokeCoverageMaps[nearest.strokeIdx];
+
+  if (onTrack) {
+    for (var i = Math.max(0, nearest.sampleIdx - 4); i <= Math.min(pts.length - 1, nearest.sampleIdx + 4); i++) {
+      var dx = pts[i].x - lx;
+      var dy = pts[i].y - ly;
+      if (Math.sqrt(dx * dx + dy * dy) <= tolerance) {
+        map[i] = true;
+      }
+    }
+  }
+
+  return {
+    onTrack: onTrack,
+    strokeIdx: nearest.strokeIdx,
+    coverage: getMultiStrokeCoverage(strokeCoverageMaps),
+    strokeCoverage: getCoverage(map),
+    feedbackState: onTrack ? 'on-track' : 'off-track',
+  };
+}
+
+/**
  * Fisher-Yates shuffle of an array (in place). Returns the array.
  * Uses an optional random function for deterministic testing.
  */
@@ -115,6 +196,9 @@ if (typeof module !== 'undefined' && module.exports) {
     nearestSample,
     getCoverage,
     updateCoverage,
+    nearestStrokeSample,
+    getMultiStrokeCoverage,
+    updateMultiStrokeCoverage,
     fisherYatesShuffle,
     toLogical,
     toDisplay,

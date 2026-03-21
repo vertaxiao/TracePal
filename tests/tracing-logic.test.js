@@ -5,6 +5,9 @@ const {
   nearestSample,
   getCoverage,
   updateCoverage,
+  nearestStrokeSample,
+  getMultiStrokeCoverage,
+  updateMultiStrokeCoverage,
   fisherYatesShuffle,
   toLogical,
   toDisplay,
@@ -277,5 +280,160 @@ describe('Coordinate conversion', () => {
     const back = toDisplay(logical.x, logical.y, displaySize);
     expect(back.x).toBeCloseTo(original.x, 10);
     expect(back.y).toBeCloseTo(original.y, 10);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. Multi-stroke detection
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Multi-stroke detection', () => {
+  // Two strokes mimicking number 4:
+  // Stroke 1: horizontal line y=150, x from 0→200
+  // Stroke 2: vertical line x=150, y from 0→250
+  const stroke1 = makeLinePoints(0, 150, 200, 150, 50);   // 51 points
+  const stroke2 = makeLinePoints(150, 0, 150, 250, 50);   // 51 points
+  const strokePoints = [stroke1, stroke2];
+
+  function freshMultiMaps() {
+    return [freshCoverageMap(stroke1.length), freshCoverageMap(stroke2.length)];
+  }
+
+  test('nearestStrokeSample finds correct stroke for point near stroke 1', () => {
+    const result = nearestStrokeSample(strokePoints, 100, 152);
+    expect(result.strokeIdx).toBe(0);
+    expect(result.dist).toBeCloseTo(2, 0);
+  });
+
+  test('nearestStrokeSample finds correct stroke for point near stroke 2', () => {
+    const result = nearestStrokeSample(strokePoints, 148, 50);
+    expect(result.strokeIdx).toBe(1);
+    expect(result.dist).toBeCloseTo(2, 0);
+  });
+
+  test('nearestStrokeSample handles intersection point (nearest to both)', () => {
+    // Point at (150, 150) is on both strokes — should pick one (dist ≈ 0)
+    const result = nearestStrokeSample(strokePoints, 150, 150);
+    expect(result.dist).toBeCloseTo(0, 0);
+  });
+
+  test('getMultiStrokeCoverage returns 0 for empty maps', () => {
+    const maps = freshMultiMaps();
+    expect(getMultiStrokeCoverage(maps)).toBe(0);
+  });
+
+  test('getMultiStrokeCoverage aggregates across strokes', () => {
+    const maps = freshMultiMaps();
+    // Mark all of stroke 1 as covered
+    for (let i = 0; i < maps[0].length; i++) maps[0][i] = true;
+    // Stroke 2 untouched
+    const cov = getMultiStrokeCoverage(maps);
+    // 51 of 102 total points
+    expect(cov).toBeCloseTo(51 / 102, 5);
+  });
+
+  test('getMultiStrokeCoverage returns 1 when all strokes fully covered', () => {
+    const maps = freshMultiMaps();
+    for (let i = 0; i < maps[0].length; i++) maps[0][i] = true;
+    for (let i = 0; i < maps[1].length; i++) maps[1][i] = true;
+    expect(getMultiStrokeCoverage(maps)).toBe(1);
+  });
+
+  test('updateMultiStrokeCoverage marks correct stroke on-track', () => {
+    const maps = freshMultiMaps();
+    // Trace on stroke 1 (horizontal at y=150)
+    const result = updateMultiStrokeCoverage(strokePoints, maps, 100, 150);
+    expect(result.onTrack).toBe(true);
+    expect(result.strokeIdx).toBe(0);
+    expect(result.feedbackState).toBe('on-track');
+    // Stroke 1 coverage should increase
+    expect(result.strokeCoverage).toBeGreaterThan(0);
+  });
+
+  test('updateMultiStrokeCoverage does not affect other strokes', () => {
+    const maps = freshMultiMaps();
+    // Trace on stroke 1
+    updateMultiStrokeCoverage(strokePoints, maps, 50, 150);
+    // Stroke 2 coverage should still be 0
+    expect(getCoverage(maps[1])).toBe(0);
+  });
+
+  test('updateMultiStrokeCoverage marks off-track within NEAR_PATH', () => {
+    const maps = freshMultiMaps();
+    // 30px off stroke 1 — beyond tolerance but within NEAR_PATH
+    const result = updateMultiStrokeCoverage(strokePoints, maps, 100, 150 + 30);
+    expect(result.onTrack).toBe(false);
+    expect(result.feedbackState).toBe('off-track');
+  });
+
+  test('updateMultiStrokeCoverage returns none beyond NEAR_PATH', () => {
+    const maps = freshMultiMaps();
+    // Far from both strokes (stroke1 at y=150, stroke2 at x=150)
+    const result = updateMultiStrokeCoverage(strokePoints, maps, 0, 0);
+    expect(result.feedbackState).toBe('none');
+  });
+
+  test('each stroke can independently reach 95% completion', () => {
+    const maps = freshMultiMaps();
+    // Cover all of stroke 1
+    for (const pt of stroke1) {
+      updateMultiStrokeCoverage(strokePoints, maps, pt.x, pt.y);
+    }
+    const stroke1Cov = getCoverage(maps[0]);
+    expect(stroke1Cov).toBeGreaterThanOrEqual(DEFAULTS.COMPLETION_RATIO);
+    // Stroke 2 should still be 0
+    expect(getCoverage(maps[1])).toBe(0);
+  });
+
+  test('shape completes only when ALL strokes reach 95%', () => {
+    const maps = freshMultiMaps();
+    // Cover stroke 1 fully
+    for (const pt of stroke1) {
+      updateMultiStrokeCoverage(strokePoints, maps, pt.x, pt.y);
+    }
+    // Overall < 95% because stroke 2 is untouched
+    expect(getMultiStrokeCoverage(maps)).toBeLessThan(DEFAULTS.COMPLETION_RATIO);
+
+    // Now cover stroke 2
+    for (const pt of stroke2) {
+      updateMultiStrokeCoverage(strokePoints, maps, pt.x, pt.y);
+    }
+    // Both strokes at 100%, overall should be 100%
+    expect(getMultiStrokeCoverage(maps)).toBe(1);
+  });
+
+  test('three-stroke shape (A) coverage works correctly', () => {
+    // Simulate letter A: left diagonal, right diagonal, crossbar
+    const leftDiag  = makeLinePoints(75, 240, 150, 45, 40);
+    const rightDiag = makeLinePoints(150, 45, 225, 240, 40);
+    const crossbar  = makeLinePoints(105, 165, 195, 165, 30);
+    const aStrokes  = [leftDiag, rightDiag, crossbar];
+    const aMaps     = [freshCoverageMap(41), freshCoverageMap(41), freshCoverageMap(31)];
+
+    // Trace all three strokes
+    for (const pt of leftDiag)  updateMultiStrokeCoverage(aStrokes, aMaps, pt.x, pt.y);
+    for (const pt of rightDiag) updateMultiStrokeCoverage(aStrokes, aMaps, pt.x, pt.y);
+    for (const pt of crossbar)  updateMultiStrokeCoverage(aStrokes, aMaps, pt.x, pt.y);
+
+    expect(getCoverage(aMaps[0])).toBeGreaterThanOrEqual(DEFAULTS.COMPLETION_RATIO);
+    expect(getCoverage(aMaps[1])).toBeGreaterThanOrEqual(DEFAULTS.COMPLETION_RATIO);
+    expect(getCoverage(aMaps[2])).toBeGreaterThanOrEqual(DEFAULTS.COMPLETION_RATIO);
+    expect(getMultiStrokeCoverage(aMaps)).toBeGreaterThanOrEqual(DEFAULTS.COMPLETION_RATIO);
+  });
+
+  test('four-stroke shape (E) coverage works correctly', () => {
+    // Simulate letter E: spine + 3 bars
+    const spine     = makeLinePoints(90, 45, 90, 240, 40);
+    const topBar    = makeLinePoints(90, 45, 205, 45, 30);
+    const midBar    = makeLinePoints(90, 142, 185, 142, 25);
+    const bottomBar = makeLinePoints(90, 240, 205, 240, 30);
+    const eStrokes  = [spine, topBar, midBar, bottomBar];
+    const eMaps     = [freshCoverageMap(41), freshCoverageMap(31), freshCoverageMap(26), freshCoverageMap(31)];
+
+    for (const pt of spine)     updateMultiStrokeCoverage(eStrokes, eMaps, pt.x, pt.y);
+    for (const pt of topBar)    updateMultiStrokeCoverage(eStrokes, eMaps, pt.x, pt.y);
+    for (const pt of midBar)    updateMultiStrokeCoverage(eStrokes, eMaps, pt.x, pt.y);
+    for (const pt of bottomBar) updateMultiStrokeCoverage(eStrokes, eMaps, pt.x, pt.y);
+
+    expect(getMultiStrokeCoverage(eMaps)).toBeGreaterThanOrEqual(DEFAULTS.COMPLETION_RATIO);
   });
 });

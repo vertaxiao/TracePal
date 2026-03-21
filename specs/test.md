@@ -153,6 +153,37 @@ Per release, verify against Veya's LD accessibility principles:
 2. **Voice change** → Test all announcements + mute toggle
 3. **Canvas refactor** → Test all 25 shapes + touch/mouse
 4. **Major decision** → Submit PR with test updates for human review
+5. **Logic changes** → Add Jest unit tests in `tests/` + run `npm test`
+
+## Jest Test Coverage (Automated)
+
+### Implemented Tests (27 passing)
+| File | Tests | Coverage | Status |
+|------|-------|----------|--------|
+| `tests/tracing-logic.test.js` | 27 | Core logic | ✅ Complete |
+
+### Test Suites
+1. **Completion detection** (5 tests) - 95% threshold logic
+2. **Coverage map calculation** (7 tests) - Tolerance, on-track marking
+3. **Shape path recognition** (7 tests) - `nearestSample`, tolerance boundaries
+4. **Shuffle/Fisher-Yates** (5 tests) - Permutation correctness
+5. **Coordinate conversion** (3 tests) - Scaling, round-trip
+
+### Testable Module
+- **`static/js/tracing-logic.js`** - Pure logic extracted from `main.js`
+  - `getCoverage()` - 95% threshold calculation
+  - `nearestSample()` - Path recognition
+  - `updateCoverage()` - Coverage marking with tolerance
+  - `fisherYatesShuffle()` - Shuffle logic
+  - `toLogical()` / `toDisplay()` - Coordinate conversion
+
+### Remaining Test Files (Todo)
+| File | Priority | Reason |
+|------|----------|--------|
+| `tests/voiceFeedback.test.js` | P2 | Web Speech API hard to mock |
+| `tests/touchPointer.test.js` | P1 | Requires browser testing |
+| `tests/navigation.test.js` | P2 | DOM-dependent |
+| `tests/canvasRendering.test.js` | P2 | Visual verification needed |
 
 ## Human Review Required
 After updating this spec or making changes:

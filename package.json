@@ -1,0 +1,24 @@
+{
+  "name": "tracepal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vertaxiao/TracePal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/vertaxiao/TracePal/issues"
+  },
+  "homepage": "https://github.com/vertaxiao/TracePal#readme",
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
+}

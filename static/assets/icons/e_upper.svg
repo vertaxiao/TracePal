@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
   <!-- Uppercase E: multi-stroke - vertical spine + 3 horizontal bars -->
-  <path data-stroke="1" d="M 90 45 L 90 240" fill="none" stroke="none" stroke-width="0"/>
-  <path data-stroke="2" d="M 90 45 L 205 45" fill="none" stroke="none" stroke-width="0"/>
-  <path data-stroke="3" d="M 90 142 L 185 142" fill="none" stroke="none" stroke-width="0"/>
-  <path data-stroke="4" d="M 90 240 L 205 240" fill="none" stroke="none" stroke-width="0"/>
+  <path data-stroke="1" d="M 90,60 L 90,240" fill="none" stroke="none" stroke-width="0"/>
+  <path data-stroke="2" d="M 90,60 L 210,60" fill="none" stroke="none" stroke-width="0"/>
+  <path data-stroke="3" d="M 90,150 L 180,150" fill="none" stroke="none" stroke-width="0"/>
+  <path data-stroke="4" d="M 90,240 L 210,240" fill="none" stroke="none" stroke-width="0"/>
 </svg>

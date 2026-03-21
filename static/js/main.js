@@ -298,11 +298,46 @@ function render() {
   if (!ctx || displaySize === 0) return;
   ctx.clearRect(0, 0, displaySize, displaySize);
   drawGuide();
+  
   if (completionPath) {
     drawPath(completionPath);
+  } else if (isMultiStroke) {
+    // For multi-stroke: draw completed strokes in green, then current user path in blue
+    drawCompletedStrokes();
+    drawUserPath();
   } else {
     drawUserPath();
   }
+}
+
+function drawCompletedStrokes() {
+  if (!isMultiStroke) return;
+  for (let s = 0; s < strokes.length; s++) {
+    if (!strokes[s].complete) continue;
+    // Draw completed stroke as green path
+    const pts = strokes[s].sampledPoints.map(function(pt) {
+      return { x: pt.x, y: pt.y, onTrack: true };
+    });
+    drawPathGreen(pts);
+  }
+}
+
+function drawPathGreen(path) {
+  if (path.length < 2) return;
+  const scale = displaySize / LOGICAL_SIZE;
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.lineWidth = USER_LINE_WIDTH;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#28a745'; // Green for completed
+  ctx.beginPath();
+  ctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) {
+    ctx.lineTo(path[i].x, path[i].y);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawGuide() {
@@ -315,14 +350,17 @@ function drawGuide() {
   ctx.lineCap   = 'round';
 
   if (isMultiStroke) {
-    // Draw each stroke separately so completed strokes render green
-    for (let s = 0; s < strokes.length; s++) {
-      const guide = new Path2D(strokes[s].pathD);
+    // Draw ONLY the current stroke being traced (not all incomplete strokes)
+    // Find which stroke the user is currently on (first incomplete)
+    const currentStroke = strokes.findIndex(s => !s.complete);
+    if (currentStroke >= 0) {
+      const guide = new Path2D(strokes[currentStroke].pathD);
       ctx.fillStyle   = 'rgba(200,200,200,0.12)';
       ctx.fill(guide);
-      ctx.strokeStyle = strokes[s].complete ? '#28a745' : '#c8c8c8';
+      ctx.strokeStyle = '#c8c8c8';
       ctx.stroke(guide);
     }
+    // Completed strokes are drawn separately with green user stroke
   } else {
     const img   = IMAGES[imageOrder[currentIdx]];
     const guide = new Path2D(img.pathD);

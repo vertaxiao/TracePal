@@ -180,8 +180,20 @@ function samplePath(pathD, n) {
   return { points: points, length: len };
 }
 
+// ── Split a path d-string on M (moveto) commands ─────────────────────────────
+// "M 10,20 L 30,40 M 50,60 L 70,80" → ["M 10,20 L 30,40", "M 50,60 L 70,80"]
+function splitOnMoveCommands(d) {
+  const parts = d.split(/(?=M\s)/);
+  const result = [];
+  for (let i = 0; i < parts.length; i++) {
+    const trimmed = parts[i].trim();
+    if (trimmed.length > 0) result.push(trimmed);
+  }
+  return result.length > 0 ? result : [d];
+}
+
 // ── Load SVG path data from external file ────────────────────────────────────
-// Returns an array of path-d strings (one per <path> element).
+// Returns an array of path-d strings (one per stroke / M-separated subpath).
 function loadSvgPathData(svgFileUrl, callback) {
   fetch(svgFileUrl)
     .then(response => response.text())
@@ -191,7 +203,12 @@ function loadSvgPathData(svgFileUrl, callback) {
       const pathEls = svgDoc.querySelectorAll('path');
       if (pathEls.length > 0) {
         const paths = [];
-        pathEls.forEach(function (el) { paths.push(el.getAttribute('d')); });
+        pathEls.forEach(function (el) {
+          // Split on M commands to detect multi-stroke paths within a single element
+          const d = el.getAttribute('d');
+          const subPaths = splitOnMoveCommands(d);
+          subPaths.forEach(function (sp) { paths.push(sp); });
+        });
         callback(paths);
       } else {
         console.error('No path element found in SVG:', svgFileUrl);
@@ -314,15 +331,15 @@ function drawCompletedStrokes() {
   if (!isMultiStroke) return;
   for (let s = 0; s < strokes.length; s++) {
     if (!strokes[s].complete) continue;
-    // Draw completed stroke as green path
+    // Draw completed stroke as green path (only this stroke's points, no connections)
     const pts = strokes[s].sampledPoints.map(function(pt) {
       return { x: pt.x, y: pt.y, onTrack: true };
     });
-    drawPathGreen(pts);
+    drawStrokeGreen(pts);
   }
 }
 
-function drawPathGreen(path) {
+function drawStrokeGreen(path) {
   if (path.length < 2) return;
   const scale = displaySize / LOGICAL_SIZE;
   ctx.save();
@@ -350,17 +367,32 @@ function drawGuide() {
   ctx.lineCap   = 'round';
 
   if (isMultiStroke) {
-    // Draw ONLY the current stroke being traced (not all incomplete strokes)
-    // Find which stroke the user is currently on (first incomplete)
-    const currentStroke = strokes.findIndex(s => !s.complete);
-    if (currentStroke >= 0) {
-      const guide = new Path2D(strokes[currentStroke].pathD);
-      ctx.fillStyle   = 'rgba(200,200,200,0.12)';
-      ctx.fill(guide);
-      ctx.strokeStyle = '#c8c8c8';
-      ctx.stroke(guide);
+    // Draw ALL strokes as guides (not just current one)
+    // Completed: thin green, Current: normal gray, Future: light gray
+    for (let s = 0; s < strokes.length; s++) {
+      const guide = new Path2D(strokes[s].pathD);
+      if (strokes[s].complete) {
+        // Completed stroke - already drawn by drawCompletedStrokes(), skip here
+        continue;
+      }
+      const idx = strokes.findIndex(st => !st.complete);
+      if (s === idx) {
+        // Current stroke - normal visibility
+        ctx.fillStyle   = 'rgba(200,200,200,0.12)';
+        ctx.fill(guide);
+        ctx.strokeStyle = '#c8c8c8';
+        ctx.globalAlpha = 1.0;
+        ctx.stroke(guide);
+      } else if (s > idx) {
+        // Future stroke - lighter visibility
+        ctx.fillStyle   = 'rgba(200,200,200,0.06)';
+        ctx.fill(guide);
+        ctx.strokeStyle = '#d8d8d8';
+        ctx.globalAlpha = 0.5;
+        ctx.stroke(guide);
+      }
+      ctx.globalAlpha = 1.0;
     }
-    // Completed strokes are drawn separately with green user stroke
   } else {
     const img   = IMAGES[imageOrder[currentIdx]];
     const guide = new Path2D(img.pathD);
@@ -735,14 +767,10 @@ function animateCompletionMultiStroke() {
       clearInterval(interval);
       progressBar.style.width = '100%';
       progressBar.setAttribute('aria-valuenow', '100');
-      // Build completion path from all strokes
-      completionPath = [];
+      // Mark all strokes complete — drawCompletedStrokes() renders each
+      // stroke separately, avoiding green lines across stroke boundaries.
       for (let s = 0; s < strokes.length; s++) {
         strokes[s].complete = true;
-        for (let i = 0; i < strokes[s].sampledPoints.length; i++) {
-          var pt = strokes[s].sampledPoints[i];
-          completionPath.push({ x: pt.x, y: pt.y, onTrack: true });
-        }
       }
       showCompletionSuccess();
       return;

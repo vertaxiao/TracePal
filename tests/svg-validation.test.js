@@ -14,13 +14,15 @@ describe('SVG Shape Validation', () => {
   function loadSvgPaths(svgFile) {
     const svgPath = path.join(SVG_DIR, svgFile);
     const content = fs.readFileSync(svgPath, 'utf8');
-    
+
     // Extract path d attributes
     const pathRegex = /<path[^>]*d="([^"]*)"[^>]*>/g;
     const paths = [];
     let match;
     while ((match = pathRegex.exec(content)) !== null) {
-      paths.push(match[1]);
+      // Split on M commands to detect multi-stroke subpaths
+      const subPaths = match[1].split(/(?=M\s)/).map(s => s.trim()).filter(s => s.length > 0);
+      subPaths.forEach(sp => paths.push(sp));
     }
     return paths;
   }
@@ -92,173 +94,148 @@ describe('SVG Shape Validation', () => {
     });
   });
 
-  describe('Letter A (3 strokes)', () => {
+  describe('Letter A (2 strokes)', () => {
     let paths;
     beforeAll(() => {
       paths = loadSvgPaths('a_upper.svg');
     });
 
-    test('has exactly 3 strokes', () => {
-      expect(paths.length).toBe(3);
+    test('has exactly 2 strokes', () => {
+      expect(paths.length).toBe(2);
     });
 
-    test('stroke 1: left diagonal (bottom-left to top)', () => {
+    test('stroke 1: V-shape (bottom-left to top to bottom-right)', () => {
       const commands = parsePathCommands(paths[0]);
-      expect(commands.length).toBeGreaterThanOrEqual(2);
-      
+      expect(commands.length).toBeGreaterThanOrEqual(3);
+
       // Start at bottom-left
       expect(commands[0].x).toBeLessThan(120);
       expect(commands[0].y).toBeGreaterThan(200);
-      
-      // End at top-center
-      expect(commands[commands.length - 1].x).toBeGreaterThan(130);
-      expect(commands[commands.length - 1].x).toBeLessThan(170);
-      expect(commands[commands.length - 1].y).toBeLessThan(100);
-    });
 
-    test('stroke 2: right diagonal (top to bottom-right)', () => {
-      const commands = parsePathCommands(paths[1]);
-      expect(commands.length).toBeGreaterThanOrEqual(2);
-      
-      // Start at top-center
-      expect(commands[0].x).toBeGreaterThan(130);
-      expect(commands[0].x).toBeLessThan(170);
-      expect(commands[0].y).toBeLessThan(100);
-      
+      // Middle point at top-center (peak)
+      expect(commands[1].x).toBeGreaterThan(130);
+      expect(commands[1].x).toBeLessThan(170);
+      expect(commands[1].y).toBeLessThan(100);
+
       // End at bottom-right
       expect(commands[commands.length - 1].x).toBeGreaterThan(180);
       expect(commands[commands.length - 1].y).toBeGreaterThan(200);
     });
 
-    test('stroke 3: horizontal crossbar', () => {
-      const commands = parsePathCommands(paths[2]);
+    test('stroke 2: horizontal crossbar', () => {
+      const commands = parsePathCommands(paths[1]);
       expect(commands.length).toBeGreaterThanOrEqual(2);
-      
+
       // Y should stay roughly same (horizontal)
       const yDiff = Math.abs(commands[0].y - commands[commands.length - 1].y);
       expect(yDiff).toBeLessThan(30);
-      
+
       // Should be in middle vertical range
       expect(commands[0].y).toBeGreaterThan(100);
       expect(commands[0].y).toBeLessThan(180);
-      
+
       // Should go left to right
       expect(commands[commands.length - 1].x).toBeGreaterThan(commands[0].x);
     });
 
-    test('stroke 1 and stroke 2 meet at top (A peak)', () => {
-      const stroke1 = parsePathCommands(paths[0]);
-      const stroke2 = parsePathCommands(paths[1]);
-      
-      const end1 = stroke1[stroke1.length - 1];
-      const start2 = stroke2[0];
-      
-      const dist = Math.sqrt(
-        Math.pow(end1.x - start2.x, 2) +
-        Math.pow(end1.y - start2.y, 2)
-      );
-      
-      // Should meet at top peak
-      expect(dist).toBeLessThan(50);
+    test('V-shape peak is at top center', () => {
+      const commands = parsePathCommands(paths[0]);
+      // The peak (second point) should be the highest point
+      const peakY = commands[1].y;
+      expect(peakY).toBeLessThan(commands[0].y);
+      expect(peakY).toBeLessThan(commands[commands.length - 1].y);
     });
   });
 
-  describe('Letter E (4 strokes)', () => {
+  describe('Letter E (2 strokes)', () => {
     let paths;
     beforeAll(() => {
       paths = loadSvgPaths('e_upper.svg');
     });
 
-    test('has exactly 4 strokes', () => {
-      expect(paths.length).toBe(4);
+    test('has exactly 2 strokes', () => {
+      expect(paths.length).toBe(2);
     });
 
-    test('stroke 1: vertical spine', () => {
+    test('stroke 1: C-shape (top-right → top-left → bottom-left → bottom-right)', () => {
       const commands = parsePathCommands(paths[0]);
-      expect(commands.length).toBeGreaterThanOrEqual(2);
-      
-      // Should start at top
+      expect(commands.length).toBeGreaterThanOrEqual(4);
+
+      // Start at top-right
+      expect(commands[0].x).toBeGreaterThan(150);
       expect(commands[0].y).toBeLessThan(100);
-      
-      // Should end at bottom
+
+      // Goes to top-left
+      expect(commands[1].x).toBeLessThan(120);
+      expect(commands[1].y).toBeLessThan(100);
+
+      // Down to bottom-left
+      expect(commands[2].x).toBeLessThan(120);
+      expect(commands[2].y).toBeGreaterThan(200);
+
+      // End at bottom-right
+      expect(commands[commands.length - 1].x).toBeGreaterThan(150);
       expect(commands[commands.length - 1].y).toBeGreaterThan(200);
-      
-      // X should stay roughly same (vertical)
-      const xDiff = Math.abs(commands[0].x - commands[commands.length - 1].x);
-      expect(xDiff).toBeLessThan(30);
-      
-      // Should be on left side
-      expect(commands[0].x).toBeLessThan(120);
     });
 
-    test('stroke 2: top horizontal', () => {
+    test('stroke 2: middle horizontal crossbar', () => {
       const commands = parsePathCommands(paths[1]);
-      
-      // Y should stay roughly same (horizontal)
-      const yDiff = Math.abs(commands[0].y - commands[commands.length - 1].y);
-      expect(yDiff).toBeLessThan(30);
-      
-      // Should be at top
-      expect(commands[0].y).toBeLessThan(100);
-      
-      // Should go left to right
-      expect(commands[commands.length - 1].x).toBeGreaterThan(commands[0].x);
-      expect(commands[0].x).toBeLessThan(120); // start on left
-    });
+      expect(commands.length).toBeGreaterThanOrEqual(2);
 
-    test('stroke 3: middle horizontal', () => {
-      const commands = parsePathCommands(paths[2]);
-      
       // Y should stay roughly same (horizontal)
       const yDiff = Math.abs(commands[0].y - commands[commands.length - 1].y);
       expect(yDiff).toBeLessThan(30);
-      
+
       // Should be in middle
       expect(commands[0].y).toBeGreaterThan(120);
       expect(commands[0].y).toBeLessThan(180);
-      
+
       // Should go left to right
       expect(commands[commands.length - 1].x).toBeGreaterThan(commands[0].x);
+
+      // Should start on left side (at spine)
+      expect(commands[0].x).toBeLessThan(120);
     });
 
-    test('stroke 4: bottom horizontal', () => {
-      const commands = parsePathCommands(paths[3]);
-      
-      // Y should stay roughly same (horizontal)
-      const yDiff = Math.abs(commands[0].y - commands[commands.length - 1].y);
-      expect(yDiff).toBeLessThan(30);
-      
-      // Should be at bottom
-      expect(commands[0].y).toBeGreaterThan(200);
-      
-      // Should go left to right
-      expect(commands[commands.length - 1].x).toBeGreaterThan(commands[0].x);
-    });
+    test('crossbar connects to C-shape spine', () => {
+      const cShape = parsePathCommands(paths[0]);
+      const crossbar = parsePathCommands(paths[1]);
 
-    test('all horizontals connect to spine (same X start)', () => {
-      const spine = parsePathCommands(paths[0]);
-      const top = parsePathCommands(paths[1]);
-      const middle = parsePathCommands(paths[2]);
-      const bottom = parsePathCommands(paths[3]);
-      
-      // All horizontals should start near spine X
-      const spineX = spine[0].x;
-      
-      expect(Math.abs(top[0].x - spineX)).toBeLessThan(30);
-      expect(Math.abs(middle[0].x - spineX)).toBeLessThan(30);
-      expect(Math.abs(bottom[0].x - spineX)).toBeLessThan(30);
+      // The spine X (left side of C) should be near the crossbar start X
+      const spineX = cShape[1].x; // top-left point
+      expect(Math.abs(crossbar[0].x - spineX)).toBeLessThan(30);
     });
   });
 
   describe('SVG file format', () => {
-    test('multi-stroke SVGs have data-stroke attributes', () => {
+    test('multi-stroke SVGs use M (moveto) for stroke separation', () => {
       const four = fs.readFileSync(path.join(SVG_DIR, 'four.svg'), 'utf8');
       const a = fs.readFileSync(path.join(SVG_DIR, 'a_upper.svg'), 'utf8');
       const e = fs.readFileSync(path.join(SVG_DIR, 'e_upper.svg'), 'utf8');
       
-      expect(four).toMatch(/data-stroke="\d+"/);
-      expect(a).toMatch(/data-stroke="\d+"/);
-      expect(e).toMatch(/data-stroke="\d+"/);
+      // Should have multiple M commands (pen lifts between strokes)
+      const mCount = (str) => (str.match(/M\s+\d+/g) || []).length;
+      expect(mCount(four)).toBeGreaterThanOrEqual(2); // 4 has 2 M commands
+      expect(mCount(a)).toBeGreaterThanOrEqual(2); // A has 2 M commands
+      expect(mCount(e)).toBeGreaterThanOrEqual(2); // E has 2 M commands
+    });
+
+    test('number 4 path matches original working shape', () => {
+      const four = fs.readFileSync(path.join(SVG_DIR, 'four.svg'), 'utf8');
+      // Original working path from b6372f0
+      expect(four).toMatch(/M 170,50 L 55,190 L 210,190 M 170,50 L 170,258/);
+    });
+
+    test('letter A path matches original working shape', () => {
+      const a = fs.readFileSync(path.join(SVG_DIR, 'a_upper.svg'), 'utf8');
+      // Original working path from b6372f0
+      expect(a).toMatch(/M 75 240 L 150 45 L 225 240 M 105 165 L 195 165/);
+    });
+
+    test('letter E path matches original working shape', () => {
+      const e = fs.readFileSync(path.join(SVG_DIR, 'e_upper.svg'), 'utf8');
+      // Original working path from b6372f0
+      expect(e).toMatch(/M 205 45 L 90 45 L 90 240 L 205 240 M 90 142 L 185 142/);
     });
 
     test('multi-stroke SVGs have stroke="none" (no visible stroke)', () => {
@@ -280,6 +257,17 @@ describe('SVG Shape Validation', () => {
       expect(four).not.toMatch(/stroke="#[0-9a-fA-F]+/);
       expect(a).not.toMatch(/stroke="#[0-9a-fA-F]+/);
       expect(e).not.toMatch(/stroke="#[0-9a-fA-F]+/);
+    });
+
+    test('multi-stroke SVGs do NOT have data-stroke attributes (single path)', () => {
+      const four = fs.readFileSync(path.join(SVG_DIR, 'four.svg'), 'utf8');
+      const a = fs.readFileSync(path.join(SVG_DIR, 'a_upper.svg'), 'utf8');
+      const e = fs.readFileSync(path.join(SVG_DIR, 'e_upper.svg'), 'utf8');
+      
+      // New format: single path with M commands, no data-stroke
+      expect(four).not.toMatch(/data-stroke=/);
+      expect(a).not.toMatch(/data-stroke=/);
+      expect(e).not.toMatch(/data-stroke=/);
     });
   });
 });

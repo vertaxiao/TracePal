@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase k: tall vertical stem + upper diagonal + lower diagonal -->
+  <path d="M 90 30 L 90 240 M 195 90 L 90 160 M 90 160 L 195 240" fill="none" stroke="none" stroke-width="0"/>
+</svg>

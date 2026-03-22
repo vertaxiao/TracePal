@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase H: left vertical + right vertical + crossbar -->
+  <path d="M 80 45 L 80 240 M 210 45 L 210 240 M 80 142 L 210 142" fill="none" stroke="none" stroke-width="0"/>
+</svg>

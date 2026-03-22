@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase i: dot (small circle) + vertical stem -->
+  <path d="M 150 50 A 5 5 0 1 1 150 60 A 5 5 0 1 1 150 50 Z M 150 95 L 150 240" fill="none" stroke="none" stroke-width="0"/>
+</svg>

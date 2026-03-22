@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase J: vertical stem -->
+  <path d="M 200 45 L 200 190" fill="none" stroke="none" stroke-width="0"/>
+  <!-- Bottom curve -->
+  <path d="M 200 190 C 200 250 140 260 100 230 C 80 215 75 195 80 175" fill="none" stroke="none" stroke-width="0"/>
+</svg>

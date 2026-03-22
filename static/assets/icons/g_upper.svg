@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase G: C-curve body -->
+  <path d="M 215 80 C 185 35 115 30 80 70 C 45 115 45 185 80 225 C 115 265 185 260 215 215" fill="none" stroke="none" stroke-width="0"/>
+  <!-- Horizontal bar (separate stroke) -->
+  <path d="M 215 150 L 160 150" fill="none" stroke="none" stroke-width="0"/>
+</svg>

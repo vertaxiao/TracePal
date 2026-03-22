@@ -55,6 +55,7 @@ let mouseIsDown   = false;
 let completionPath = null; // [{x, y, onTrack}] — drawn after auto-complete
 let isShuffled     = false;
 let imageOrder     = [];   // index mapping: imageOrder[i] = original IMAGES index
+let _animInterval  = null; // completion animation interval ID (for cleanup)
 
 // ── Multi-stroke state ───────────────────────────────────────────────────────
 let strokes        = [];   // [{sampledPoints, coverageMap, complete, pathD}]
@@ -265,6 +266,7 @@ function loadImage(idx) {
 
 // ── Reset tracing state ───────────────────────────────────────────────────────
 function resetTracing() {
+  if (_animInterval) { clearInterval(_animInterval); _animInterval = null; }
   isComplete     = false;
   isTracing      = false;
   mouseIsDown    = false;
@@ -319,9 +321,11 @@ function render() {
   if (completionPath) {
     drawPath(completionPath);
   } else if (isMultiStroke) {
-    // For multi-stroke: draw completed strokes in green, then current user path in blue
     drawCompletedStrokes();
-    drawUserPath();
+    // After completion, show only the clean green paths — no user trace overlay
+    if (!isComplete) {
+      drawUserPath();
+    }
   } else {
     drawUserPath();
   }
@@ -329,52 +333,20 @@ function render() {
 
 function drawCompletedStrokes() {
   if (!isMultiStroke) return;
-  for (let s = 0; s < strokes.length; s++) {
-    if (!strokes[s].complete) continue;
-    // Draw only covered points, in contiguous segments (no lines across gaps)
-    const pts = strokes[s].sampledPoints;
-    let segmentStart = -1;
-    for (let i = 0; i < pts.length; i++) {
-      if (strokes[s].coverageMap[i]) {
-        if (segmentStart === -1) segmentStart = i;
-      } else {
-        if (segmentStart !== -1) {
-          // Draw this contiguous segment
-          const seg = pts.slice(segmentStart, i).map(function(pt) {
-            return { x: pt.x, y: pt.y, onTrack: true };
-          });
-          drawStrokeGreen(seg);
-          segmentStart = -1;
-        }
-      }
-    }
-    // Draw final segment if exists
-    if (segmentStart !== -1) {
-      const seg = pts.slice(segmentStart).map(function(pt) {
-        return { x: pt.x, y: pt.y, onTrack: true };
-      });
-      drawStrokeGreen(seg);
-    }
-  }
-}
-
-function drawStrokeGreen(path) {
-  if (path.length < 2) return;
   const scale = displaySize / LOGICAL_SIZE;
   ctx.save();
   ctx.scale(scale, scale);
   ctx.lineWidth = USER_LINE_WIDTH;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#28a745'; // Green for completed
-  
-  // Draw as separate segments to avoid connecting across gaps
-  for (let i = 1; i < path.length; i++) {
-    const prev = path[i - 1];
-    const curr = path[i];
-    ctx.beginPath();
-    ctx.moveTo(prev.x, prev.y);
-    ctx.lineTo(curr.x, curr.y);
-    ctx.stroke();
+  ctx.lineJoin  = 'round';
+  ctx.lineCap   = 'round';
+  ctx.strokeStyle = '#28a745';
+
+  for (let s = 0; s < strokes.length; s++) {
+    if (!strokes[s].complete) continue;
+    // Use the actual SVG path — each stroke is a separate Path2D,
+    // so there is zero chance of green lines connecting across strokes.
+    const path = new Path2D(strokes[s].pathD);
+    ctx.stroke(path);
   }
   ctx.restore();
 }
@@ -443,9 +415,11 @@ function drawPath(path) {
   ctx.lineCap   = 'round';
 
   // Draw each segment with its own colour
+  // Skip segments where curr.newSegment is true (pen-up/pen-down break)
   for (let i = 1; i < path.length; i++) {
     const prev = path[i - 1];
     const curr = path[i];
+    if (curr.newSegment) continue;  // don't draw across stroke breaks
     ctx.beginPath();
     ctx.moveTo(prev.x, prev.y);
     ctx.lineTo(curr.x, curr.y);
@@ -579,10 +553,16 @@ function startTrace(dx, dy) {
   // Hide the start indicator once the user begins
   startIndicatorEl.style.opacity = '0';
 
+  // Mark that the next point pushed to userPath starts a new segment
+  // (so drawPath won't connect it to the previous stroke's last point)
+  _newSegment = true;
+
   const lp = toLogical(dx, dy);
   lastLogical = lp;
   processPoint(lp.x, lp.y);
 }
+
+let _newSegment = false;
 
 function continueTrace(dx, dy) {
   const lp = toLogical(dx, dy);
@@ -626,13 +606,17 @@ function processPoint(lx, ly) {
 
   // Only give feedback when close to the path
   if (dist > NEAR_PATH) {
-    userPath.push({ x: lx, y: ly, onTrack: false });
+    const pt = { x: lx, y: ly, onTrack: false };
+    if (_newSegment) { pt.newSegment = true; _newSegment = false; }
+    userPath.push(pt);
     render();
     return;
   }
 
   const onTrack = dist <= TOLERANCE;
-  userPath.push({ x: lx, y: ly, onTrack: onTrack });
+  const pt = { x: lx, y: ly, onTrack: onTrack };
+  if (_newSegment) { pt.newSegment = true; _newSegment = false; }
+  userPath.push(pt);
 
   // Mark nearby sample points as covered when on track
   if (onTrack) {
@@ -681,13 +665,17 @@ function processPointMultiStroke(lx, ly) {
   }
 
   if (minDist > NEAR_PATH) {
-    userPath.push({ x: lx, y: ly, onTrack: false });
+    const pt = { x: lx, y: ly, onTrack: false };
+    if (_newSegment) { pt.newSegment = true; _newSegment = false; }
+    userPath.push(pt);
     render();
     return;
   }
 
   const onTrack = minDist <= TOLERANCE;
-  userPath.push({ x: lx, y: ly, onTrack: onTrack });
+  const pt = { x: lx, y: ly, onTrack: onTrack };
+  if (_newSegment) { pt.newSegment = true; _newSegment = false; }
+  userPath.push(pt);
 
   const stroke = strokes[bestStroke];
 
@@ -703,6 +691,10 @@ function processPointMultiStroke(lx, ly) {
     // Check if this stroke just completed
     if (!stroke.complete && getStrokeCoverage(stroke.coverageMap) >= COMPLETION_RATIO) {
       stroke.complete = true;
+      console.log('Stroke', bestStroke, 'completed. Total strokes:', strokes.length);
+      strokes.forEach(function(s, i) {
+        console.log('  Stroke', i, 'complete:', s.complete, 'points:', s.sampledPoints.length);
+      });
     }
 
     setFeedback('on-track', 'Great tracing! Keep going!');
@@ -745,9 +737,10 @@ function animateCompletion() {
   }
 
   let idx = 0;
-  const interval = setInterval(function () {
+  _animInterval = setInterval(function () {
     if (idx >= remainingIndices.length) {
-      clearInterval(interval);
+      clearInterval(_animInterval);
+      _animInterval = null;
       progressBar.style.width = '100%';
       progressBar.setAttribute('aria-valuenow', '100');
       // Draw full green path to show completion
@@ -784,13 +777,12 @@ function animateCompletionMultiStroke() {
   }
 
   let idx = 0;
-  const interval = setInterval(function () {
+  _animInterval = setInterval(function () {
     if (idx >= remaining.length) {
-      clearInterval(interval);
+      clearInterval(_animInterval);
+      _animInterval = null;
       progressBar.style.width = '100%';
       progressBar.setAttribute('aria-valuenow', '100');
-      // Mark all strokes complete — drawCompletedStrokes() renders each
-      // stroke separately, avoiding green lines across stroke boundaries.
       for (let s = 0; s < strokes.length; s++) {
         strokes[s].complete = true;
       }

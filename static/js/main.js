@@ -331,10 +331,14 @@ function drawCompletedStrokes() {
   if (!isMultiStroke) return;
   for (let s = 0; s < strokes.length; s++) {
     if (!strokes[s].complete) continue;
-    // Draw completed stroke as green path (only this stroke's points, no connections)
-    const pts = strokes[s].sampledPoints.map(function(pt) {
-      return { x: pt.x, y: pt.y, onTrack: true };
-    });
+    // Draw only the covered points (not all sampledPoints) to avoid showing
+    // untraced portions as green
+    const pts = [];
+    for (let i = 0; i < strokes[s].sampledPoints.length; i++) {
+      if (strokes[s].coverageMap[i]) {
+        pts.push({ x: strokes[s].sampledPoints[i].x, y: strokes[s].sampledPoints[i].y, onTrack: true });
+      }
+    }
     drawStrokeGreen(pts);
   }
 }

@@ -331,15 +331,30 @@ function drawCompletedStrokes() {
   if (!isMultiStroke) return;
   for (let s = 0; s < strokes.length; s++) {
     if (!strokes[s].complete) continue;
-    // Draw only the covered points (not all sampledPoints) to avoid showing
-    // untraced portions as green
-    const pts = [];
-    for (let i = 0; i < strokes[s].sampledPoints.length; i++) {
+    // Draw only covered points, in contiguous segments (no lines across gaps)
+    const pts = strokes[s].sampledPoints;
+    let segmentStart = -1;
+    for (let i = 0; i < pts.length; i++) {
       if (strokes[s].coverageMap[i]) {
-        pts.push({ x: strokes[s].sampledPoints[i].x, y: strokes[s].sampledPoints[i].y, onTrack: true });
+        if (segmentStart === -1) segmentStart = i;
+      } else {
+        if (segmentStart !== -1) {
+          // Draw this contiguous segment
+          const seg = pts.slice(segmentStart, i).map(function(pt) {
+            return { x: pt.x, y: pt.y, onTrack: true };
+          });
+          drawStrokeGreen(seg);
+          segmentStart = -1;
+        }
       }
     }
-    drawStrokeGreen(pts);
+    // Draw final segment if exists
+    if (segmentStart !== -1) {
+      const seg = pts.slice(segmentStart).map(function(pt) {
+        return { x: pt.x, y: pt.y, onTrack: true };
+      });
+      drawStrokeGreen(seg);
+    }
   }
 }
 
@@ -349,15 +364,18 @@ function drawStrokeGreen(path) {
   ctx.save();
   ctx.scale(scale, scale);
   ctx.lineWidth = USER_LINE_WIDTH;
-  ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.strokeStyle = '#28a745'; // Green for completed
-  ctx.beginPath();
-  ctx.moveTo(path[0].x, path[0].y);
+  
+  // Draw as separate segments to avoid connecting across gaps
   for (let i = 1; i < path.length; i++) {
-    ctx.lineTo(path[i].x, path[i].y);
+    const prev = path[i - 1];
+    const curr = path[i];
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
+    ctx.lineTo(curr.x, curr.y);
+    ctx.stroke();
   }
-  ctx.stroke();
   ctx.restore();
 }
 

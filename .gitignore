@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Logs
+*.log
+app_startup.log
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+
+# Temp
+*.tmp
+*.temp

@@ -43,7 +43,17 @@ const IMAGES = [
   { id: 'j_upper', label: 'J',      svgFile: '/static/assets/icons/j_upper.svg' },
   { id: 'j_lower', label: 'j',      svgFile: '/static/assets/icons/j_lower.svg' },
   { id: 'k_upper', label: 'K',      svgFile: '/static/assets/icons/k_upper.svg' },
-  { id: 'k_lower', label: 'k',      svgFile: '/static/assets/icons/k_lower.svg' }
+  { id: 'k_lower', label: 'k',      svgFile: '/static/assets/icons/k_lower.svg' },
+  { id: 'l_upper', label: 'L',      svgFile: '/static/assets/icons/l_upper.svg' },
+  { id: 'l_lower', label: 'l',      svgFile: '/static/assets/icons/l_lower.svg' },
+  { id: 'm_upper', label: 'M',      svgFile: '/static/assets/icons/m_upper.svg' },
+  { id: 'm_lower', label: 'm',      svgFile: '/static/assets/icons/m_lower.svg' },
+  { id: 'n_upper', label: 'N',      svgFile: '/static/assets/icons/n_upper.svg' },
+  { id: 'n_lower', label: 'n',      svgFile: '/static/assets/icons/n_lower.svg' },
+  { id: 'o_upper', label: 'O',      svgFile: '/static/assets/icons/o_upper.svg' },
+  { id: 'o_lower', label: 'o',      svgFile: '/static/assets/icons/o_lower.svg' },
+  { id: 'p_upper', label: 'P',      svgFile: '/static/assets/icons/p_upper.svg' },
+  { id: 'p_lower', label: 'p',      svgFile: '/static/assets/icons/p_lower.svg' }
 ];
 
 // ── Constants ──────────────────────────────────────────────────────────────────

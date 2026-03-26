@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase l: tall vertical with small foot -->
+  <path d="M 140 50 L 140 220 Q 155 240 175 240" fill="none" stroke="#333333" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

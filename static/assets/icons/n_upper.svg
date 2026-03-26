@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase N: left vertical up, diagonal down-right, right vertical up -->
+  <path d="M 70 240 L 70 45 L 230 240 L 230 45" fill="none" stroke="#333333" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

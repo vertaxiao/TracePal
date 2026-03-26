@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase o: smaller closed oval starting at top-center -->
+  <path d="M 150 70 C 205 70 240 105 240 150 C 240 195 205 230 150 230 C 95 230 60 195 60 150 C 60 105 95 70 150 70 Z" fill="none" stroke="#333333" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

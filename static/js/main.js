@@ -53,7 +53,17 @@ const IMAGES = [
   { id: 'o_upper', label: 'O',      svgFile: '/static/assets/icons/o_upper.svg' },
   { id: 'o_lower', label: 'o',      svgFile: '/static/assets/icons/o_lower.svg' },
   { id: 'p_upper', label: 'P',      svgFile: '/static/assets/icons/p_upper.svg' },
-  { id: 'p_lower', label: 'p',      svgFile: '/static/assets/icons/p_lower.svg' }
+  { id: 'p_lower', label: 'p',      svgFile: '/static/assets/icons/p_lower.svg' },
+  { id: "q_upper", label: "Q", svgFile: "/static/assets/icons/q_upper.svg" },
+  { id: "q_lower", label: "q", svgFile: "/static/assets/icons/q_lower.svg" },
+  { id: "r_upper", label: "R", svgFile: "/static/assets/icons/r_upper.svg" },
+  { id: "r_lower", label: "r", svgFile: "/static/assets/icons/r_lower.svg" },
+  { id: "s_upper", label: "S", svgFile: "/static/assets/icons/s_upper.svg" },
+  { id: "s_lower", label: "s", svgFile: "/static/assets/icons/s_lower.svg" },
+  { id: "t_upper", label: "T", svgFile: "/static/assets/icons/t_upper.svg" },
+  { id: "t_lower", label: "t", svgFile: "/static/assets/icons/t_lower.svg" },
+  { id: "u_upper", label: "U", svgFile: "/static/assets/icons/u_upper.svg" },
+  { id: "u_lower", label: "u", svgFile: "/static/assets/icons/u_lower.svg" }
 ];
 
 // ── Constants ──────────────────────────────────────────────────────────────────

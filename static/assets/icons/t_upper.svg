@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase T: Horizontal crossbar at top + centered vertical stem -->
+  <path d="M 48 55 L 252 55
+           M 150 55 L 150 258"/>
+</svg>

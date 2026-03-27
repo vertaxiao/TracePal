@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase s: Smaller two-arc S, proportioned to x-height -->
+  <path d="M 208 130
+           C 205 96, 162 82, 134 93
+           C 106 104, 96 132, 118 154
+           C 138 174, 182 168, 198 192
+           C 214 216, 202 242, 174 248
+           C 146 254, 102 242, 96 218"/>
+</svg>

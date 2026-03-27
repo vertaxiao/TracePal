@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase S: Two counter-curving arcs forming a smooth S shape -->
+  <path d="M 222 85
+           C 222 46, 160 35, 124 53
+           C 88 71, 80 112, 110 142
+           C 138 168, 202 160, 222 192
+           C 242 220, 226 252, 188 260
+           C 150 268, 88 256, 80 222"/>
+</svg>

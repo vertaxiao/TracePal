@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase U: Two vertical strokes joined by a rounded base curve -->
+  <path d="M 65 42 L 65 188
+           C 65 262, 235 262, 235 188
+           L 235 42"/>
+</svg>

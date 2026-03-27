@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase q: Circle (x-height, left-centered) + descending stem on right side -->
+  <path d="M 198 138
+           C 198 93, 162 57, 117 57
+           C 72 57, 36 93, 36 138
+           C 36 183, 72 219, 117 219
+           C 162 219, 198 183, 198 138
+           L 198 268"/>
+</svg>

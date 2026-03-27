@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase Q: Circle (clockwise bezier) with a short diagonal tail extending from lower-right -->
+  <path d="M 150 38
+           C 208 38, 254 84, 254 142
+           C 254 200, 208 246, 150 246
+           C 92 246, 46 200, 46 142
+           C 46 84, 92 38, 150 38 Z
+           M 200 205 L 258 258"/>
+</svg>

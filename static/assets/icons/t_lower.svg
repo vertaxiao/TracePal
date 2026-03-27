@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase t: Vertical stem (taller than x-height) + shorter crossbar at x-height -->
+  <path d="M 135 45 L 135 248
+           M 62 118 L 212 118"/>
+</svg>

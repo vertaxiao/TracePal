@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase u: Down left side, curve at base, up right side to x-height, then tail down to baseline -->
+  <path d="M 88 112 L 88 200
+           C 88 252, 212 252, 212 200
+           L 212 112 L 212 240"/>
+</svg>

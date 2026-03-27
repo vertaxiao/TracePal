@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase R: Vertical stem + upper bowl/bump + diagonal leg -->
+  <path d="M 72 42 L 72 258
+           M 72 42
+           C 180 42, 218 75, 218 118
+           C 218 161, 180 166, 72 166
+           M 150 166 L 248 258"/>
+</svg>

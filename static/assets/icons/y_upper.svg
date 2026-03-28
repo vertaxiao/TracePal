@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Uppercase Y: Two upper diagonals meeting a centered vertical stem -->
+  <path d="M 62 42 L 150 142 L 238 42
+           M 150 142 L 150 258"/>
+</svg>

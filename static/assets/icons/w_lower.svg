@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <!-- Lowercase w: Continuous zig-zag with two shallow valleys, sized to x-height -->
+  <path d="M 54 112
+           L 100 232
+           L 150 150
+           L 200 232
+           L 246 112"/>
+</svg>
